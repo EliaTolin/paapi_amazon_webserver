@@ -1,5 +1,13 @@
-# This is a sample Python script.
+from flask import Flask
+from routes.routes import base_api
 
-# Press the green button in the gutter to run the script.
+
+app = Flask(__name__)
+app.register_blueprint(base_api)
+
+@app.route('/')
+def hello_world():
+    return 'Hello, World!\n'
+
 if __name__ == '__main__':
-    print('nintendo')
+    app.run(debug = True)
