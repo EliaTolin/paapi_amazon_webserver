@@ -1,7 +1,25 @@
 from flask import Blueprint, request
 from core.amazon_api import *
+from core.redis_manager import redis_manager
+import config
+
 
 amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
+
+
+@amazon_route.route('/get_category_offers', methods=['POST'])
+def get_category_offers():
+    category = request.values.get("category") or None
+    if category is None:
+        return "empty_category", 400
+
+    if redis_manager.redis_db.exists(category):
+        value = redis_manager.redis_db.get(category)
+        return value
+    else:
+        redis_manager.redis_db.set(category, category)
+        redis_manager.redis_db.expire(category, config.DATABASE_REFRESH_TIME_SECONDS)
+        return "non exist"
 
 
 @amazon_route.route('/search_product', methods=['POST'])
