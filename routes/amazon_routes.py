@@ -1,9 +1,34 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from core.amazon_api import *
 
-amazon_route = Blueprint('amazon_route', __name__,url_prefix='/pa_amazon')
+amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
 
-@amazon_route.route('/')
-def index():
-    searchProduct('nintendo')
-    return "This is the index page AMAZON\n"
+
+@amazon_route.route('/search_product', methods=['POST'])
+def search_product():
+    wordlist = request.values.get("wordlist") or None
+    if wordlist is None:
+        return "empty_wordlist", 400
+
+        # Get parameters
+    actor = request.values.get("actor") or None
+    artist = request.values.get("artist") or None
+    author = request.values.get("author") or None
+    brand = request.values.get("brand") or None
+    title = request.values.get("title") or None
+    max_price = request.values.get("max_price") or None
+    min_price = request.values.get("min_price") or None
+    min_saving_percent = request.values.get("min_saving_percent") or None
+    min_reviews_rating = request.values.get("min_reviews_rating") or None
+    search_index = request.values.get("search_index") or None
+    sort = request.values.get("sort") or None
+
+    list_products = search_products(keywords=wordlist, actor=actor, artist=artist, author=author, brand=brand,
+                                    title=title, max_price=max_price, min_price=min_price,
+                                    min_saving_percent=min_saving_percent, min_reviews_rating=min_reviews_rating,
+                                    search_index=search_index, sort=sort)
+
+    if len(list_products) == 0:
+        return "empty_results", 204
+
+    return list_products
