@@ -59,5 +59,9 @@ def search_product_route():
 
     if len(list_products) == 0:
         return "empty_results", 204
+    try:
+        list_products.to_json().replace("\"", "\'")
+        return list_products
 
-    return list_products
+    except ValueError:
+        return "error_convert_json", 500
