@@ -1,5 +1,6 @@
 from amazon_paapi import AmazonApi
 from amazon_paapi.sdk.models.sort_by import SortBy
+from amazon_paapi.errors.exceptions import TooManyRequests
 from config import *
 from models.amazon_exception import *
 from models.amazon_model import AmazonItem
@@ -74,13 +75,14 @@ class AmazonApiCore:
 
         item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
         item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
-
-        print(category+" Out mutex " + str(threading.get_ident()))
+        # print(category+" Out mutex " + str(threading.get_ident()))
         if not redis_manager.redis_db.exists(category):
             with self.mutex:
-                print(category+" In mutex " + str(threading.get_ident()))
+                # print(category+" In mutex " + str(threading.get_ident()))
+                # Check if exist previous error
+                key_error_too_many = category + "_error_too_many"
 
-                page_download = 1
+                page_download = redis_manager.redis_db.get(key_error_too_many) or 1
                 while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
                     try:
                         products = self.search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
@@ -97,8 +99,18 @@ class AmazonApiCore:
 
                     except MissingParameterAmazonException:
                         raise MissingParameterAmazonException
+                    except TooManyRequests:
+                        redis_manager.redis_db.set(key_error_too_many, page_download)
+                        redis_manager.redis_db.expire(key_error_too_many, redis_manager.redis_db.ttl(category))
+                        if page_download > 0:
+                            pass
+                        else:
+                            raise TooManyRequestAmazonException
+                    finally:
+                        redis_manager.redis_db.delete(key_error_too_many)
                 redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
-        print(category+" Finish mutex " + str(threading.get_ident()))
+
+        # print(category+" Finish mutex " + str(threading.get_ident()))
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
         return redis_manager.redis_db.lrange(category, index_start, index_finish)

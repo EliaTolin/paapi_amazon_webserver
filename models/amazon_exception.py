@@ -18,3 +18,9 @@ class GenericErrorAmazonException(Error):
     """Generic Error in Amazon API"""
     pass
 
+
+class TooManyRequestAmazonException(Error):
+    """except amazon_paapi.errors.exceptions.TooManyRequests:
+        https://github.com/sergioteula/python-amazon-paapi/discussions/59"""
+    pass
+

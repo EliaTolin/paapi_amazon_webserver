@@ -34,6 +34,9 @@ def get_category_offers_route():
     except MissingParameterAmazonException:
         return "missing_parameter", 400
 
+    except TooManyRequestAmazonException:
+        return "too_many_request", 500
+
     if len(list_products) == 0:
         return "empty_results", 204
 
@@ -73,6 +76,9 @@ def search_product_route():
                                                       item_count=item_count)
     except MissingParameterAmazonException:
         return "missing_parameter", 400
+
+    except TooManyRequestAmazonException:
+        return "too_many_request", 500
 
     if len(list_products) == 0:
         return "empty_results", 204
