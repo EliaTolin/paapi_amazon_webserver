@@ -5,6 +5,8 @@ import json
 
 amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
 
+amazonApiCore = AmazonApiCore()
+
 
 def list_to_json(list_items):
     json_list = []
@@ -26,8 +28,8 @@ def get_category_offers_route():
     if category is None:
         return "empty_category", 400
     try:
-        list_products = get_category_offers(category, item_count=item_count, item_page=item_page,
-                                            min_saving_percent=min_saving_percent)
+        list_products = amazonApiCore.get_category_offers(category, item_count=item_count, item_page=item_page,
+                                                          min_saving_percent=min_saving_percent)
 
     except MissingParameterAmazonException:
         return "missing_parameter", 400
@@ -62,11 +64,13 @@ def search_product_route():
     except ValueError:
         return "wrong_type_parameter", 400
     try:
-        list_products = search_products(keywords=wordlist, actor=actor, artist=artist, author=author, brand=brand,
-                                        title=title, max_price=max_price, min_price=min_price,
-                                        min_saving_percent=min_saving_percent, min_reviews_rating=min_reviews_rating,
-                                        search_index=search_index, sort=sort, item_page=item_page,
-                                        item_count=item_count)
+        list_products = amazonApiCore.search_products(keywords=wordlist, actor=actor, artist=artist, author=author,
+                                                      brand=brand,
+                                                      title=title, max_price=max_price, min_price=min_price,
+                                                      min_saving_percent=min_saving_percent,
+                                                      min_reviews_rating=min_reviews_rating,
+                                                      search_index=search_index, sort=sort, item_page=item_page,
+                                                      item_count=item_count)
     except MissingParameterAmazonException:
         return "missing_parameter", 400
 
