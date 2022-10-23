@@ -4,8 +4,10 @@ from config import *
 from models.amazon_exception import *
 from models.amazon_model import AmazonItem
 from core.redis_manager import redis_manager
+import pickle
 
-amazon = AmazonApi(AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_PARTNER_ID, AMAZON_COUNTRY)
+amazon = AmazonApi(AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, AMAZON_PARTNER_ID, AMAZON_COUNTRY,
+                   throttling=THROTTLING_SECONDS)
 
 
 def _get_sort_type(sort) -> SortBy:
@@ -32,7 +34,8 @@ def search_products(keywords: str = None, actor: str = None, artist: str = None,
     is_none = keywords or actor or artist or author or brand or search_index or title
 
     # Limit the item count
-    item_count = 100 if item_count > 100 else item_count
+    item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
+    item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
 
     if is_none is None:
         raise MissingParameterAmazonException
@@ -60,37 +63,34 @@ def search_products(keywords: str = None, actor: str = None, artist: str = None,
     return list_item
 
 
-def get_category_offers(category, item_count: int = None, item_page: int = None,
-                        min_saving_percent: int = None):
-    item_count = 100 if item_count > 100 else item_count
+def get_category_offers(category, item_count: int = 10, item_page: int = 1,
+                        min_saving_percent: int = None, include_zero_offers: bool = False):
+    if (item_count*item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
+        return []
 
-    if redis_manager.redis_db.exists(category):
-        num_element_in_db = redis_manager.redis_db.hget(category, "items").count()
+    item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
+    item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
 
-        if (item_count*item_page) < num_element_in_db:
-
+    if not redis_manager.redis_db.exists(category):
+        page_download = 1
+        while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER*MAX_ITEM_PAGE_OFFER:
             try:
-                products = search_products(search_index=category, item_count=item_count, item_page=item_page,
+                products = search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
+                                           item_page=page_download,
                                            min_saving_percent=min_saving_percent)
+                if len(products) == 0:
+                    break
+                for product in products:
+                    if not include_zero_offers:
+                        if product.price_saving_amount_percentage is None:
+                            continue
+                    redis_manager.redis_db.rpush(category, product.to_json())
+                page_download += 1
+
             except MissingParameterAmazonException:
                 raise MissingParameterAmazonException
-            if len(products) == 0:
-                raise GenericErrorAmazonException
+        redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
 
-        return redis_manager.redis_db.hget(category, "items")
-
-    try:
-        products = search_products(search_index=category, item_count=item_count, item_page=item_page,
-                                   min_saving_percent=min_saving_percent)
-
-    except MissingParameterAmazonException:
-        raise MissingParameterAmazonException
-
-    if len(products) == 0:
-        raise GenericErrorAmazonException
-
-    redis_manager.redis_db.set(category, "items", products)
-    # redis_manager.redis_db.set(category, "number_items", item_count)
-    redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
-
-    return products
+    index_start = (item_page-1) * item_count
+    index_finish = (item_page * item_count) - 1
+    return redis_manager.redis_db.lrange(category, index_start, index_finish)

@@ -1,16 +1,27 @@
 from flask import Blueprint, request
 from core.amazon_api import *
 from models.amazon_exception import *
+import json
 
 amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
 
 
+def list_to_json(list_items):
+    json_list = []
+    for item in list_items:
+        json_list.append(item.to_json().replace("\"", "\'"))
+    return json_list
+
+
 @amazon_route.route('/get_category_offers', methods=['POST'])
 def get_category_offers_route():
-    category = request.values.get("category") or None
-    item_count = request.values.get("item_count") or None
-    item_page = request.values.get("item_page") or None
-    min_saving_percent = request.values.get("min_saving_percent") or None
+    try:
+        category = request.values.get("category", default=None)
+        item_count = request.values.get("item_count", type=int) or None
+        item_page = request.values.get("item_page", type=int) or None
+        min_saving_percent = request.values.get("min_saving_percent", type=int) or None
+    except ValueError:
+        return "wrong_type_parameter", 400
 
     if category is None:
         return "empty_category", 400
@@ -24,7 +35,7 @@ def get_category_offers_route():
     if len(list_products) == 0:
         return "empty_results", 204
 
-    return list_products
+    return json.dumps(list_products)
 
 
 @amazon_route.route('/search_product', methods=['POST'])
@@ -33,21 +44,23 @@ def search_product_route():
     if wordlist is None:
         return "empty_wordlist", 400
 
-        # Get parameters
-    actor = request.values.get("actor") or None
-    artist = request.values.get("artist") or None
-    author = request.values.get("author") or None
-    brand = request.values.get("brand") or None
-    title = request.values.get("title") or None
-    max_price = request.values.get("max_price") or None
-    min_price = request.values.get("min_price") or None
-    min_saving_percent = request.values.get("min_saving_percent") or None
-    min_reviews_rating = request.values.get("min_reviews_rating") or None
-    search_index = request.values.get("search_index") or None
-    sort = request.values.get("sort") or None
-    item_count = request.values.get("item_count") or None
-    item_page = request.values.get("item_page") or None
-
+    # Get parameters
+    try:
+        actor = request.values.get("actor", default=None)
+        artist = request.values.get("artist", default=None)
+        author = request.values.get("author", default=None)
+        brand = request.values.get("brand", default=None)
+        title = request.values.get("title", default=None)
+        max_price = request.values.get("max_price", type=int) or None
+        min_price = request.values.get("min_price", type=int) or None
+        min_saving_percent = request.values.get("min_saving_percent", type=int) or None
+        min_reviews_rating = request.values.get("min_reviews_rating", type=int) or None
+        search_index = request.values.get("search_index", default=None)
+        sort = request.values.get("sort", default=None)
+        item_count = request.values.get("item_count", type=int) or None
+        item_page = request.values.get("item_page", type=int) or None
+    except ValueError:
+        return "wrong_type_parameter", 400
     try:
         list_products = search_products(keywords=wordlist, actor=actor, artist=artist, author=author, brand=brand,
                                         title=title, max_price=max_price, min_price=min_price,
@@ -60,7 +73,6 @@ def search_product_route():
     if len(list_products) == 0:
         return "empty_results", 204
     try:
-        list_products.to_json().replace("\"", "\'")
         return list_products
 
     except ValueError:
