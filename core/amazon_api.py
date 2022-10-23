@@ -76,29 +76,28 @@ class AmazonApiCore:
         item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
 
         print(category+" Out mutex " + str(threading.get_ident()))
-        with self.mutex:
-            if not redis_manager.redis_db.exists(category):
-                with self.mutex:
-                    print(category+" In mutex " + str(threading.get_ident()))
+        if not redis_manager.redis_db.exists(category):
+            with self.mutex:
+                print(category+" In mutex " + str(threading.get_ident()))
 
-                    page_download = 1
-                    while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
-                        try:
-                            products = self.search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
-                                                            item_page=page_download,
-                                                            min_saving_percent=min_saving_percent)
-                            if len(products) == 0:
-                                break
-                            for product in products:
-                                if not include_zero_offers:
-                                    if product.price_saving_amount_percentage is None:
-                                        continue
-                                redis_manager.redis_db.rpush(category, product.to_json())
-                            page_download += 1
+                page_download = 1
+                while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
+                    try:
+                        products = self.search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
+                                                        item_page=page_download,
+                                                        min_saving_percent=min_saving_percent)
+                        if len(products) == 0:
+                            break
+                        for product in products:
+                            if not include_zero_offers:
+                                if product.price_saving_amount_percentage is None:
+                                    continue
+                            redis_manager.redis_db.rpush(category, product.to_json())
+                        page_download += 1
 
-                        except MissingParameterAmazonException:
-                            raise MissingParameterAmazonException
-                    redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
+                    except MissingParameterAmazonException:
+                        raise MissingParameterAmazonException
+                redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
         print(category+" Finish mutex " + str(threading.get_ident()))
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
