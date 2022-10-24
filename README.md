@@ -5,7 +5,7 @@
     <img src="https://user-images.githubusercontent.com/60351315/197600582-6d538b00-eaf7-4975-a457-d89b1df543a5.png" alt="Logo" width="720">
   </a>
 
-  <h3 align="center">PAAPI Amazon Server</h3>
+  <h3 align="center">PAAPI Amazon Webserver</h3>
 
   <p align="center">
     WebServer Amazon PA API implementation using Flask and Redis for caching
