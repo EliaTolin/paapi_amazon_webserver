@@ -1,4 +1,4 @@
-###  Development in progress, collaborate!
+###  Development in progress, collaborate! 
 <br/>
 <p align="center">
   <a href="https://github.com/EliaTolin/paapi_amazon_webserver">
@@ -18,8 +18,12 @@
     <a href="https://github.com/EliaTolin/paapi_amazon_webserver/issues">Request Feature</a>
   </p>
 </p>
-
-![Contributors](https://img.shields.io/github/contributors/EliaTolin/paapi_amazon_webserver?color=dark-green) ![Forks](https://img.shields.io/github/forks/EliaTolin/paapi_amazon_webserver?style=social) ![Stargazers](https://img.shields.io/github/stars/EliaTolin/paapi_amazon_webserver?style=social) ![Issues](https://img.shields.io/github/issues/EliaTolin/paapi_amazon_webserver) ![License](https://img.shields.io/github/license/EliaTolin/paapi_amazon_webserver) 
+![Amazon API](https://img.shields.io/badge/Amazon%20API-5.0-%23FD9B15)
+![Contributors](https://img.shields.io/github/contributors/EliaTolin/paapi_amazon_webserver?color=dark-green)
+![Forks](https://img.shields.io/github/forks/EliaTolin/paapi_amazon_webserver?style=social) 
+![Stargazers](https://img.shields.io/github/stars/EliaTolin/paapi_amazon_webserver?style=social) 
+![Issues](https://img.shields.io/github/issues/EliaTolin/paapi_amazon_webserver) 
+![License](https://img.shields.io/github/license/EliaTolin/paapi_amazon_webserver) 
 
 ## About The Project
 
