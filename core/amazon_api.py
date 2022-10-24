@@ -75,14 +75,16 @@ class AmazonApiCore:
 
         item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
         item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
-        # print(category+" Out mutex " + str(threading.get_ident()))
-        if not redis_manager.redis_db.exists(category):
-            with self.mutex:
-                # print(category+" In mutex " + str(threading.get_ident()))
-                # Check if exist previous error
-                key_error_too_many = category + "_error_too_many"
 
-                page_download = redis_manager.redis_db.get(key_error_too_many) or 1
+        key_error_too_many = category + "_error_too_many"
+        if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+            with self.mutex:
+                # Check if exist previous error
+                page_download = 1
+                value_key = redis_manager.redis_db.get(key_error_too_many)
+                if value_key is not None:
+                    page_download = int(value_key)
+
                 while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
                     try:
                         products = self.search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
@@ -101,12 +103,15 @@ class AmazonApiCore:
                         raise MissingParameterAmazonException
                     except TooManyRequests:
                         redis_manager.redis_db.set(key_error_too_many, page_download)
-                        redis_manager.redis_db.expire(key_error_too_many, redis_manager.redis_db.ttl(category))
+
+                        ttl_category = redis_manager.redis_db.ttl(category)
+                        ttl_category = DATABASE_REFRESH_TIME_SECONDS if ttl_category < 0 else ttl_category
+                        redis_manager.redis_db.expire(key_error_too_many, ttl_category)
                         if page_download > 0:
-                            pass
+                            break
                         else:
                             raise TooManyRequestAmazonException
-                    finally:
+                    else:
                         redis_manager.redis_db.delete(key_error_too_many)
                 redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
 
