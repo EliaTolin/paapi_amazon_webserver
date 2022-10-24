@@ -105,7 +105,7 @@ class AmazonApiCore:
                         redis_manager.redis_db.set(key_error_too_many, page_download)
 
                         ttl_category = redis_manager.redis_db.ttl(category)
-                        ttl_category = DATABASE_REFRESH_TIME_SECONDS if ttl_category < 0 else ttl_category
+                        ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
                         redis_manager.redis_db.expire(key_error_too_many, ttl_category)
                         if page_download > 0:
                             break
@@ -113,7 +113,7 @@ class AmazonApiCore:
                             raise TooManyRequestAmazonException
                     else:
                         redis_manager.redis_db.delete(key_error_too_many)
-                redis_manager.redis_db.expire(category, DATABASE_REFRESH_TIME_SECONDS)
+                redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
 
         # print(category+" Finish mutex " + str(threading.get_ident()))
         index_start = (item_page - 1) * item_count
