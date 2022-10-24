@@ -2,13 +2,13 @@
 <br/>
 <p align="center">
   <a href="https://github.com/EliaTolin/paapi_amazon_webserver">
-    <img src="https://user-images.githubusercontent.com/60351315/197600582-6d538b00-eaf7-4975-a457-d89b1df543a5.png" alt="Logo" width="720">
+    <img src="https://user-images.githubusercontent.com/60351315/197619270-95b9dd60-6e73-4191-a309-a54104b60d86.png" alt="Logo" width="720">
   </a>
 
   <h3 align="center">PAAPI Amazon Webserver</h3>
 
   <p align="center">
-    WebServer Amazon PA API implementation using Flask and Redis for caching
+    Amazon PA API implementation using Flask and Redis for caching
     <br/>
     <br/>
     <br/>
@@ -23,7 +23,7 @@
 
 ## About The Project
 
-PAAPI Amazon Server is a webserver that simplifies operations through api pa.
+PAAPI Amazon Webserver is a webserver that simplifies operations through api pa.
 
  It allows the caching of offers of the requested categories, for a configurable time, saved in a Redis database.
 It is possible to use this server as a backend for applications or web pages where offers are displayed.
