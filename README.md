@@ -8,7 +8,7 @@
   <h3 align="center">PAAPI Amazon Webserver</h3>
 
   <p align="center">
-    Amazon PA API implementation using Flask and Redis for caching
+    Implementing the Amazon PA API using Flask as a webserver and Redis for caching offers.
     <br/>
     <br/>
     <br/>
