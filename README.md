@@ -1,1 +1,2 @@
-# pa_amazon_server
+# PA Amazon Server 
+Amazon PA API implementation using Flask and Redis for caching
