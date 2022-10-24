@@ -1,2 +1,100 @@
-# PA Amazon Server 
-Amazon PA API implementation using Flask and Redis for caching
+###  Development in progress, collaborate!
+<br/>
+<p align="center">
+  <a href="https://github.com/EliaTolin/paapi_amazon_server">
+    <img src="https://user-images.githubusercontent.com/60351315/197600582-6d538b00-eaf7-4975-a457-d89b1df543a5.png" alt="Logo" width="720">
+  </a>
+
+  <h3 align="center">PAAPI Amazon Server</h3>
+
+  <p align="center">
+    Amazon PA API implementation using Flask and Redis for caching
+    <br/>
+    <br/>
+    <br/>
+    <br/>
+    <a href="https://github.com/EliaTolin/paapi_amazon_server/issues">Report Bug</a>
+    .
+    <a href="https://github.com/EliaTolin/paapi_amazon_server/issues">Request Feature</a>
+  </p>
+</p>
+
+![Contributors](https://img.shields.io/github/contributors/EliaTolin/paapi_amazon_server?color=dark-green) ![Forks](https://img.shields.io/github/forks/EliaTolin/paapi_amazon_server?style=social) ![Stargazers](https://img.shields.io/github/stars/EliaTolin/paapi_amazon_server?style=social) ![Issues](https://img.shields.io/github/issues/EliaTolin/paapi_amazon_server) ![License](https://img.shields.io/github/license/EliaTolin/paapi_amazon_server) 
+
+## About The Project
+
+PAAPI Amazon Server is a webserver that simplifies operations through api pa.
+
+ It allows the caching of offers of the requested categories, for a configurable time, saved in a Redis database.
+It is possible to use this server as a backend for applications or web pages where offers are displayed.
+
+PAAPI Amazon Server has the automatisms you are looking for for offers and limit the consumption of API requests.
+
+## Built With
+
+The server use Redis for the cache and Flask as the web server.
+Use a wrapper for pa api.
+
+* [PAAPI Amazon Python wrapper](https://github.com/sergioteula/python-amazon-paapi)
+
+## Getting Started
+
+It is recommended to use a virtualenv.
+A Docker is provided that allows the use of Redis, if you want you can use your own Redis database.
+
+### Installation
+
+1. Get AP Amazon credentials.
+2. Clone the repo
+
+```shell
+git clone https://github.com/EliaTolin/paapi_amazon_server/
+```
+
+3. Install dependencies
+
+```shell
+pip install -r requirements.txt
+```
+
+4. Enter your API Credentials in `config.py`
+
+```py
+AMAZON_ACCESS_KEY = 'YOUR_ACCESS_KEY'
+AMAZON_SECRET_KEY = 'YOUR_SECRET_KEY'
+AMAZON_PARTNER_ID = 'YOUR_PARTNER_ID'
+AMAZON_COUNTRY = 'YOUR_COUNTRY_ID'
+```
+
+4. Start Docker with Redis.
+
+```shell
+docker-compose up -d
+```
+
+## Usage
+
+The webserver provides two endpoints, others will be in development if requested.
+- **/search_product **
+	Use this to have products returned to you based on the parameters provided.
+</br>
+- **/get_category_offers**
+	Use this to make you return the products on offer or not regarding a certain category, it saves it in the DB with a timeout, if it is requested again it provides the results saved in the cache without re-downloading them. It has systems to handle the TooManyRequest error.
+
+## Contributing
+
+### Creating A Pull Request
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+Distributed under the GPL-3.0 License. See [LICENSE](https://github.com/EliaTolin/paapi_amazon_server/blob/master/LICENSE) for more information.
+
+## Authors
+
+* **Elia Tolin** - *Founder of Aurora Digital* - [Elia Tolin](https://github.com/EliaTolin/) -
