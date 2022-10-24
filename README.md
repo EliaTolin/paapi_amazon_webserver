@@ -75,11 +75,14 @@ docker-compose up -d
 ## Usage
 
 The webserver provides two endpoints, others will be in development if requested.
-- **/search_product **
+- **/search_product**
+
 	Use this to have products returned to you based on the parameters provided.
-</br>
+
+
 - **/get_category_offers**
-	Use this to make you return the products on offer or not regarding a certain category, it saves it in the DB with a timeout, if it is requested again it provides the results saved in the cache without re-downloading them. It has systems to handle the TooManyRequest error.
+
+	Use this to make you return the products on offer or not regarding a certain category, it saves it in the DB with a timeout, if it is requested 	again it provides the results saved in the cache without re-downloading them. It has systems to handle the TooManyRequest error.
 
 ## Contributing
 
