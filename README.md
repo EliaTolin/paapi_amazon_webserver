@@ -1,7 +1,7 @@
 ###  Development in progress, collaborate!
 <br/>
 <p align="center">
-  <a href="https://github.com/EliaTolin/paapi_amazon_server">
+  <a href="https://github.com/EliaTolin/paapi_amazon_webserver">
     <img src="https://user-images.githubusercontent.com/60351315/197600582-6d538b00-eaf7-4975-a457-d89b1df543a5.png" alt="Logo" width="720">
   </a>
 
@@ -13,13 +13,13 @@
     <br/>
     <br/>
     <br/>
-    <a href="https://github.com/EliaTolin/paapi_amazon_server/issues">Report Bug</a>
+    <a href="https://github.com/EliaTolin/paapi_amazon_webserver/issues">Report Bug</a>
     .
-    <a href="https://github.com/EliaTolin/paapi_amazon_server/issues">Request Feature</a>
+    <a href="https://github.com/EliaTolin/paapi_amazon_webserver/issues">Request Feature</a>
   </p>
 </p>
 
-![Contributors](https://img.shields.io/github/contributors/EliaTolin/paapi_amazon_server?color=dark-green) ![Forks](https://img.shields.io/github/forks/EliaTolin/paapi_amazon_server?style=social) ![Stargazers](https://img.shields.io/github/stars/EliaTolin/paapi_amazon_server?style=social) ![Issues](https://img.shields.io/github/issues/EliaTolin/paapi_amazon_server) ![License](https://img.shields.io/github/license/EliaTolin/paapi_amazon_server) 
+![Contributors](https://img.shields.io/github/contributors/EliaTolin/paapi_amazon_webserver?color=dark-green) ![Forks](https://img.shields.io/github/forks/EliaTolin/paapi_amazon_webserver?style=social) ![Stargazers](https://img.shields.io/github/stars/EliaTolin/paapi_amazon_webserver?style=social) ![Issues](https://img.shields.io/github/issues/EliaTolin/paapi_amazon_webserver) ![License](https://img.shields.io/github/license/EliaTolin/paapi_amazon_webserver) 
 
 ## About The Project
 
@@ -48,7 +48,7 @@ A Docker is provided that allows the use of Redis, if you want you can use your 
 2. Clone the repo
 
 ```shell
-git clone https://github.com/EliaTolin/paapi_amazon_server/
+git clone https://github.com/EliaTolin/paapi_amazon_webserver/
 ```
 
 3. Install dependencies
@@ -96,7 +96,7 @@ The webserver provides two endpoints, others will be in development if requested
 
 ## License
 
-Distributed under the GPL-3.0 License. See [LICENSE](https://github.com/EliaTolin/paapi_amazon_server/blob/master/LICENSE) for more information.
+Distributed under the GPL-3.0 License. See [LICENSE](https://github.com/EliaTolin/paapi_amazon_webserver/blob/master/LICENSE) for more information.
 
 ## Authors
 
