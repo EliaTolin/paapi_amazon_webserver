@@ -86,6 +86,11 @@ The webserver provides two endpoints, others will be in development if requested
 
 ## Contributing
 
+For ignore your config.py
+
+```shell
+ git update-index --skip-worktree config.py
+```
 ### Creating A Pull Request
 
 1. Fork the Project
