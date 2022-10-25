@@ -1,7 +1,7 @@
 from amazon_paapi.models import Item
 import json
 
-from models.amazon_exception import *
+from models.exceptions.amazon_exception import *
 
 
 # print(item.images.primary.large.url)  # Primary image url

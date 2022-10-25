@@ -1,7 +1,9 @@
 from flask import Blueprint, request
 from core.amazon_api import *
-from models.amazon_exception import *
+from models.exceptions.amazon_exception import *
+from models.exceptions.redis_exception import *
 import json
+
 
 amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
 
@@ -36,6 +38,9 @@ def get_category_offers_route():
 
     except TooManyRequestAmazonException:
         return "too_many_request", 500
+
+    except RedisConnectionException:
+        return "redis_connection_error", 500
 
     if len(list_products) == 0:
         return "empty_results", 204

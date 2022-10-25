@@ -1,6 +1,4 @@
-class Error(Exception):
-    """Base class for other exception"""
-    pass
+from models.exceptions.base_exception import Error
 
 
 class UrlNotDefinedAmazonException(Error):

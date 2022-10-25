@@ -2,10 +2,12 @@ from amazon_paapi import AmazonApi
 from amazon_paapi.sdk.models.sort_by import SortBy
 from amazon_paapi.errors.exceptions import TooManyRequests
 from config import *
-from models.amazon_exception import *
+from models.exceptions.amazon_exception import *
 from models.amazon_model import AmazonItem
 from core.redis_manager import redis_manager
 import threading
+
+from models.exceptions.redis_exception import RedisConnectionException
 
 
 class AmazonApiCore:
@@ -96,26 +98,44 @@ class AmazonApiCore:
                             if not include_zero_offers:
                                 if product.price_saving_amount_percentage is None:
                                     continue
-                            redis_manager.redis_db.rpush(category, product.to_json())
+                            try:
+
+                                redis_manager.redis_db.rpush(category, product.to_json())
+
+                            except (redis_manager.redis.exceptions.ConnectionError, ConnectionRefusedError):
+                                raise RedisConnectionException
+
                         page_download += 1
 
                     except MissingParameterAmazonException:
                         raise MissingParameterAmazonException
-                    except TooManyRequests:
-                        redis_manager.redis_db.set(key_error_too_many, page_download)
 
-                        ttl_category = redis_manager.redis_db.ttl(category)
-                        ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
-                        redis_manager.redis_db.expire(key_error_too_many, ttl_category)
-                        if page_download > 0:
-                            break
-                        else:
-                            raise TooManyRequestAmazonException
+                    except TooManyRequests:
+                        try:
+                            redis_manager.redis_db.set(key_error_too_many, page_download)
+                            ttl_category = redis_manager.redis_db.ttl(category)
+                            ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
+                            redis_manager.redis_db.expire(key_error_too_many, ttl_category)
+                            if page_download > 0:
+                                break
+                            else:
+                                raise TooManyRequestAmazonException
+                        except (redis_manager.redis.exceptions.ConnectionError, ConnectionRefusedError):
+                            raise RedisConnectionException
                     else:
-                        redis_manager.redis_db.delete(key_error_too_many)
-                redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
+                        try:
+                            redis_manager.redis_db.delete(key_error_too_many)
+                        except (redis_manager.redis.exceptions.ConnectionError, ConnectionRefusedError):
+                            raise RedisConnectionException
+                try:
+                    redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
+                except (redis_manager.redis.exceptions.ConnectionError, ConnectionRefusedError):
+                    raise RedisConnectionException
 
         # print(category+" Finish mutex " + str(threading.get_ident()))
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
-        return redis_manager.redis_db.lrange(category, index_start, index_finish)
+        try:
+            return redis_manager.redis_db.lrange(category, index_start, index_finish)
+        except (redis_manager.redis.exceptions.ConnectionError, ConnectionRefusedError):
+            raise RedisConnectionException
