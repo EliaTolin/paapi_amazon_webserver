@@ -11,5 +11,13 @@ class RedisManager:
                                     decode_responses=True)
         self.time_created = datetime.now().time()
 
+    def is_redis_available(self):
+        try:
+            self.redis_db.ping()
+            print("Successfully connected to redis")
+        except (redis.exceptions.ConnectionError, ConnectionRefusedError):
+            print("Redis connection error!")
+            return False
+        return True
 
 redis_manager = RedisManager()
