@@ -66,11 +66,20 @@ AMAZON_PARTNER_ID = 'YOUR_PARTNER_ID'
 AMAZON_COUNTRY = 'YOUR_COUNTRY_ID'
 ```
 
-4. Start Docker with Redis.
+4. Start webserver.
+
+```shell
+python main.py
+```
+
+Be sure you have a redis instance.
+
+Otherwise use the Docker-compose for development but before configure the config.py file.
 
 ```shell
 docker-compose up -d
 ```
+
 
 ## Usage
 
