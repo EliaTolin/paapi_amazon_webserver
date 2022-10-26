@@ -15,7 +15,7 @@ services:
 
   web:
     container_name: webserver_flask
-    build: .
+    #build: .
     volumes:
       - .:/code
     ports:
@@ -29,6 +29,7 @@ services:
       - redis
     networks:
       - project_networks
+    
 
 networks:
     project_networks:
