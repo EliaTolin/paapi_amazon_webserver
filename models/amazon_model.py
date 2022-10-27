@@ -25,7 +25,7 @@ class AmazonItem:
         else:
             self.product_info_color = None
             
-        if product.offers.listings[0] is not None or product.offers.listings[0].price is not None:
+        if product.offers.listings[0] is not None and product.offers.listings[0].price is not None:
 
             if product.offers.listings[0].price.amount is not None:
                 self.price_actual = product.offers.listings[0].price.amount
