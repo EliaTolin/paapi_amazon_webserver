@@ -100,8 +100,10 @@ class AmazonApiCore:
                         if len(products) == 0:
                             break
                         for product in products:
-                            if not include_zero_offers:
+                            if min_saving_percent > 0:
                                 if product.price_saving_amount_percentage is None:
+                                    continue
+                                if product.price_saving_amount_percentage < min_saving_percent:
                                     continue
                             redis_manager.redis_db.rpush(category, product.to_json())
 
