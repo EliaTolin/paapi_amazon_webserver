@@ -19,5 +19,10 @@ class RedisManager:
             print("Redis connection error!")
             return False
         return True
+    
+    def delete_all_keys(self):
+        keys = self.redis_db.keys('*')
+        for key in keys:
+            self.redis_db.delete(key)
 
 redis_manager = RedisManager()

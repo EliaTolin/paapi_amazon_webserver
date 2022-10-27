@@ -24,6 +24,9 @@ def get_category_offers_route():
         item_count = request.values.get("item_count", type=int) or None
         item_page = request.values.get("item_page", type=int) or None
         min_saving_percent = request.values.get("min_saving_percent", type=int) or None
+        include_zero_offers = False
+        if request.values.get("include_zero_offers", type=int, default=0) > 0:
+            include_zero_offers = True
     except ValueError:
         return "wrong_type_parameter", 400
 
@@ -31,7 +34,7 @@ def get_category_offers_route():
         return "empty_category", 400
     try:
         list_products = amazonApiCore.get_category_offers(category, item_count=item_count, item_page=item_page,
-                                                          min_saving_percent=min_saving_percent)
+                                                          min_saving_percent=min_saving_percent, include_zero_offers=include_zero_offers)
 
     except MissingParameterAmazonException:
         return "missing_parameter", 400

@@ -24,31 +24,38 @@ class AmazonItem:
                 self.product_info_color = product.item_info.product_info.color.display_value
         else:
             self.product_info_color = None
+            
+        if product.offers.listings[0] is not None or product.offers.listings[0].price is not None:
 
-        if product.offers.listings[0].price.amount is not None:
-            self.price_actual = product.offers.listings[0].price.amount
-        else:
-            self.price_actual = None
+            if product.offers.listings[0].price.amount is not None:
+                self.price_actual = product.offers.listings[0].price.amount
+            else:
+                self.price_actual = None
 
-        if product.offers.listings[0].price.currency is not None:
-            self.price_currency = product.offers.listings[0].price.currency
-        else:
-            self.price_currency = None
+            if product.offers.listings[0].price.currency is not None:
+                self.price_currency = product.offers.listings[0].price.currency
+            else:
+                self.price_currency = None
 
-        if product.offers.listings[0].price.savings is not None:
-            if product.offers.listings[0].price.savings.amount is not None:
-                self.price_saving_amount = product.offers.listings[0].price.savings.amount
+            if product.offers.listings[0].price.savings is not None:
+                if product.offers.listings[0].price.savings.amount is not None:
+                    self.price_saving_amount = product.offers.listings[0].price.savings.amount
+                else:
+                    self.price_saving_amount = None
+
+                if product.offers.listings[0].price.savings.percentage is not None:
+                    self.price_saving_amount_percentage = product.offers.listings[0].price.savings.percentage
+                else:
+                    self.price_saving_amount_percentage = None
             else:
                 self.price_saving_amount = None
-
-            if product.offers.listings[0].price.savings.percentage is not None:
-                self.price_saving_amount_percentage = product.offers.listings[0].price.savings.percentage
-            else:
                 self.price_saving_amount_percentage = None
         else:
+            self.price_actual = None
+            self.price_currency = None
             self.price_saving_amount = None
             self.price_saving_amount_percentage = None
-
+            
         if product.offers.listings[0].saving_basis is not None:
             if product.offers.listings[0].saving_basis.amount is not None:
                 self.price_base = product.offers.listings[0].saving_basis.amount
@@ -102,3 +109,5 @@ class AmazonItem:
 
     def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__)
+        # object_json = json.dumps(self, default=lambda o: o.__dict__)
+        # return object_json.replace("\"","\'")
