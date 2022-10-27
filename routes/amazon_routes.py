@@ -20,10 +20,11 @@ def list_to_json(list_items):
 @amazon_route.route('/get_category_offers', methods=['POST'])
 def get_category_offers_route():
     try:
-        category = request.values.get("category", default=None)
-        item_count = request.values.get("item_count", type=int) or None
-        item_page = request.values.get("item_page", type=int) or None
-        min_saving_percent = request.values.get("min_saving_percent", type=int) or None
+        category = request.values.get("category", default = None)
+        item_count = request.values.get("item_count", type=int, default = 10)
+        item_page = request.values.get("item_page", type=int, default = 1)
+        min_saving_percent = request.values.get("min_saving_percent", type=int, default = 0)
+        exclude_zero_offers = request.values.get("exclude_zero_offers", type=int, default = 0)
     except ValueError:
         return "wrong_type_parameter", 400
 
@@ -31,7 +32,7 @@ def get_category_offers_route():
         return "empty_category", 400
     try:
         list_products = amazonApiCore.get_category_offers(category, item_count=item_count, item_page=item_page,
-                                                          min_saving_percent=min_saving_percent)
+                                                          min_saving_percent=min_saving_percent,exclude_zero_offers=exclude_zero_offers)
 
     except MissingParameterAmazonException:
         return "missing_parameter", 400

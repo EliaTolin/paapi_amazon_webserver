@@ -76,7 +76,7 @@ class AmazonApiCore:
         return list_item
 
     def get_category_offers(self, category, item_count: int = 10, item_page: int = 1,
-                            min_saving_percent: int = None, include_zero_offers: bool = False):
+                            min_saving_percent: int = None, exclude_zero_offers: bool = False):
         if (item_count * item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
             return []
 
@@ -101,9 +101,10 @@ class AmazonApiCore:
                             break
                         for product in products:
                             if min_saving_percent > 0:
-                                if product.price_saving_amount_percentage is None:
-                                    continue
-                                if product.price_saving_amount_percentage < min_saving_percent:
+                                if  product.price_saving_amount_percentage is None:
+                                    if exclude_zero_offers:
+                                        continue
+                                elif product.price_saving_amount_percentage < min_saving_percent:
                                     continue
                             redis_manager.redis_db.rpush(category, product.to_json())
 
