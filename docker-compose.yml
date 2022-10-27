@@ -15,7 +15,7 @@ services:
 
   web:
     container_name: webserver_flask
-    #build: .
+    build: .
     volumes:
       - .:/code
     ports:
