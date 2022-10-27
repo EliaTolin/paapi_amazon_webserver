@@ -62,6 +62,8 @@ class AmazonApiCore:
                     continue
                 if item.offers.listings[0] is None:
                     continue
+                if item.offers.listings[0].price is None:
+                    continue
 
                 amazon_item = AmazonItem(item)
                 list_item.append(amazon_item)
