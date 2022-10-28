@@ -1,6 +1,16 @@
 from models.exceptions.base_exception import Error
 
 
+class InvalidArgumentAmazonException(Error):
+    """The value provided in the request for atleast one parameter is invalid."""
+    pass
+
+
+class CategoryNotExistException(Error):
+    """Category not exists"""
+    pass
+
+
 class UrlNotDefinedAmazonException(Error):
     """Url not defined """
     pass

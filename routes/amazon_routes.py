@@ -4,7 +4,6 @@ from models.exceptions.amazon_exception import *
 from models.exceptions.redis_exception import *
 import json
 
-
 amazon_route = Blueprint('amazon_route', __name__, url_prefix='/pa_amazon')
 
 amazonApiCore = AmazonApiCore()
@@ -20,11 +19,12 @@ def list_to_json(list_items):
 @amazon_route.route('/get_category_offers', methods=['POST'])
 def get_category_offers_route():
     try:
-        category = request.values.get("category", default = None)
-        item_count = request.values.get("item_count", type=int, default = 10)
-        item_page = request.values.get("item_page", type=int, default = 1)
-        min_saving_percent = request.values.get("min_saving_percent", type=int, default = 0)
-        exclude_zero_offers = request.values.get("exclude_zero_offers", type=int, default = 0)
+        category = request.values.get("category", default=None)
+        item_count = request.values.get("item_count", type=int, default=10)
+        item_page = request.values.get("item_page", type=int, default=1)
+        min_saving_percent = request.values.get("min_saving_percent", type=int) or None
+        exclude_zero_offers = request.values.get("exclude_zero_offers", type=bool, default=False)
+
     except ValueError:
         return "wrong_type_parameter", 400
 
@@ -32,7 +32,11 @@ def get_category_offers_route():
         return "empty_category", 400
     try:
         list_products = amazonApiCore.get_category_offers(category, item_count=item_count, item_page=item_page,
-                                                          min_saving_percent=min_saving_percent,exclude_zero_offers=exclude_zero_offers)
+                                                          min_saving_percent=min_saving_percent,
+                                                          exclude_zero_offers=exclude_zero_offers)
+
+    except CategoryNotExistException:
+        return "category_not_exist", 400
 
     except MissingParameterAmazonException:
         return "missing_parameter", 400
@@ -42,6 +46,9 @@ def get_category_offers_route():
 
     except RedisConnectionException:
         return "redis_connection_error", 500
+
+    except InvalidArgumentAmazonException:
+        return "invalid_arguments", 400
 
     if len(list_products) == 0:
         return "empty_results", 204
