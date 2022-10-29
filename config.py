@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv 
+
+# LOADS ENVIROMENTS FILE (.env) IF EXISTS ELSE USE DEFAULTS VALUE
+load_dotenv()
 
 AMAZON_ACCESS_KEY = os.getenv('AMAZON_ACCESS_KEY', 'YOUR_ACCESS_KEY')
 AMAZON_SECRET_KEY = os.getenv('AMAZON_SECRET_KEY', 'YOUR_SECRET_KEY')
