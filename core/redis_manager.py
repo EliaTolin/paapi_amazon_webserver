@@ -25,4 +25,5 @@ class RedisManager:
         for key in keys:
             self.redis_db.delete(key)
 
+
 redis_manager = RedisManager()
