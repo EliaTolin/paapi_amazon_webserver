@@ -99,7 +99,7 @@ def search_product_route():
         json_list = []
         for el in list_products:
             json_list.append(el.to_json())
-        return json.dumps(list_products)
+        return json.dumps(json_list)
 
     except ValueError:
         return "error_convert_json", 500
