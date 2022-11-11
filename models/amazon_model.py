@@ -1,7 +1,6 @@
 from amazon_paapi.models import Item
 import json
 
-from helpers.format_helper import format_decimal
 from models.exceptions.amazon_exception import *
 
 
@@ -26,7 +25,7 @@ class AmazonItem:
         if product.offers.listings[0] is not None and product.offers.listings[0].price is not None:
 
             if product.offers.listings[0].price.amount is not None:
-                self.price_actual = format_decimal(product.offers.listings[0].price.amount)
+                self.price_actual = product.offers.listings[0].price.amount
             else:
                 self.price_actual = None
 
@@ -37,7 +36,7 @@ class AmazonItem:
 
             if product.offers.listings[0].price.savings is not None:
                 if product.offers.listings[0].price.savings.amount is not None:
-                    self.price_saving_amount = format_decimal(product.offers.listings[0].price.savings.amount)
+                    self.price_saving_amount = product.offers.listings[0].price.savings.amount
                 else:
                     self.price_saving_amount = None
 
@@ -56,7 +55,7 @@ class AmazonItem:
 
         if product.offers.listings[0].saving_basis is not None:
             if product.offers.listings[0].saving_basis.amount is not None:
-                self.price_base = format_decimal(product.offers.listings[0].saving_basis.amount)
+                self.price_base =product.offers.listings[0].saving_basis.amount
             else:
                 self.price_base = None
             if product.offers.listings[0].delivery_info is not None:
@@ -69,11 +68,11 @@ class AmazonItem:
 
         if product.offers.summaries[0] is not None:
             if product.offers.summaries[0].highest_price is not None:
-                self.price_highest = format_decimal(product.offers.summaries[0].highest_price.amount)
+                self.price_highest = product.offers.summaries[0].highest_price.amount
             else:
                 self.price_highest = None
             if product.offers.summaries[0].lowest_price is not None:
-                self.price_lowest = format_decimal(product.offers.summaries[0].lowest_price.amount)
+                self.price_lowest = product.offers.summaries[0].lowest_price.amount
             else:
                 self.price_lowest = None
         else:

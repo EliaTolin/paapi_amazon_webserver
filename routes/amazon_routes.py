@@ -96,7 +96,7 @@ def search_product_route():
     if len(list_products) == 0:
         return "empty_results", 204
     try:
-        return list_products
+        return json.dumps(list_products)
 
     except ValueError:
         return "error_convert_json", 500
