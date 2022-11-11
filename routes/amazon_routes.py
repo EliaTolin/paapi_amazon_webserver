@@ -96,6 +96,9 @@ def search_product_route():
     if len(list_products) == 0:
         return "empty_results", 204
     try:
+        json_list = []
+        for el in list_products:
+            json_list.append(el.to_json())
         return json.dumps(list_products)
 
     except ValueError:
