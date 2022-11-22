@@ -50,9 +50,10 @@ class AmazonApiCore:
 
         if is_none is None:
             raise MissingParameterAmazonException
-
-        if search_index not in AmazonCategory.ITCategory:
-            raise CategoryNotExistException
+        
+        if search_index is not None:
+            if search_index not in AmazonCategory.ITCategory:
+                raise CategoryNotExistException
 
         # Limit the item count
         item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count

@@ -109,6 +109,9 @@ def search_product_route():
     except TooManyRequestAmazonException as e:
         return e.code_message, 500
 
+    except CategoryNotExistException as e:
+        return e.code_message, 400
+    
     if len(list_products) == 0:
         if item_page > 1:
             return error_code_message.limit_reached_products, 204
