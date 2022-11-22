@@ -99,11 +99,14 @@ class AmazonApiCore:
                     continue
 
                 if amazon_item.price_saving_amount_percentage is None:
+                    if min_saving_percent is not None:
+                        continue
                     if exclude_zero_offers:
                         continue
                 elif min_saving_percent is not None:
                     if amazon_item.price_saving_amount_percentage < min_saving_percent:
                         continue
+
                 if only_prime_delivery is not None:
                     if only_prime_delivery and not amazon_item.prime_delivery:
                         continue
