@@ -15,3 +15,4 @@ def status_db():
     if redis_manager.is_redis_available():
         return "ok", 200
     return "not_available", 500
+

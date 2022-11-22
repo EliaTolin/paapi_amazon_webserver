@@ -1,17 +1,22 @@
 from flask import Flask
+
+import init_server as init
 from routes.routes import base_api
-from core.redis_manager import redis_manager
+
+import config
+
 app = Flask(__name__)
 app.register_blueprint(base_api)
 
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World!\n'
+    return 'Hello, PA API Amazon Server!\n'
 
 
 if __name__ == '__main__':
-    if not redis_manager.is_redis_available():
-        exit(-1,"REDIS NOT CONNECTED")
-
-    app.run(host='0.0.0.0', debug=True)
+    if init.init_server():
+        app.run(host='0.0.0.0', debug=config.DEBUG)
+    else:
+        print("###### THERE WAS AN ERROR, CHECK THE LOGS ######")
+        exit(-1)

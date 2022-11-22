@@ -9,7 +9,7 @@ from models.amazon_model import AmazonItem
 from core.redis_manager import redis_manager
 import threading
 import constant.error_code_message_constants as error_code_message
-
+import constant.database.database_constants as database_constants
 
 class AmazonApiCore:
 
@@ -130,7 +130,8 @@ class AmazonApiCore:
         item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
         item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
 
-        key_error_too_many = category + "_error_too_many"
+        key_error_too_many = category + database_constants.key_suffix_error_too_many
+
         if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
             with self.mutex:
                 # Check if exist previous error

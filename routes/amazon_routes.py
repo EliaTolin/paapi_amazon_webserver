@@ -122,3 +122,12 @@ def search_product_route():
 
     except ValueError:
         return error_code_message.error_convert_json, 500
+
+
+@amazon_route.route(amazon_routes.add_category_preference, methods=['POST'])
+def add_category_preference():
+    list_search_category = request.values.getlist(amazon_params.list_category_preference)
+    for category in list_search_category:
+        redis_manager.redis_db.incr(category+database_constants.key_suffix_preference)
+    return 200
+
