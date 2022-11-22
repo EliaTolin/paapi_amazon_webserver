@@ -85,6 +85,7 @@ def search_product_route():
         item_page = request.values.get(amazon_params.itemPageParam, type=int) or None
         exclude_zero_price = request.values.get(amazon_params.excludeZeroPriceParam, type=bool, default=False)
         exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
+        only_prime_delivery = request.values.get(amazon_params.only_prime_delivery, type=bool, default=False)
 
     except ValueError:
         return error_code_message.wrong_type_parameter, 400
@@ -100,7 +101,8 @@ def search_product_route():
                                                                      item_page=item_page,
                                                                      item_count=item_count,
                                                                      exclude_zero_price=exclude_zero_price,
-                                                                     exclude_zero_offers=exclude_zero_offers)
+                                                                     exclude_zero_offers=exclude_zero_offers,
+                                                                     only_prime_delivery=only_prime_delivery)
     except MissingParameterAmazonException as e:
         return e.code_message, 400
 

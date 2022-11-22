@@ -15,5 +15,6 @@ itemPageParam = "item_page"
 excludeZeroOffersParam = "exclude_zero_offers"
 categoryParam = "category"
 excludeZeroPriceParam = "exclude_zero_price"
+only_prime_delivery = "only_prime_delivery"
 
 list_category_preference = "list_category_preference"

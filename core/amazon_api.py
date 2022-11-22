@@ -39,7 +39,7 @@ class AmazonApiCore:
                         max_price: int = None, min_price: int = None, min_saving_percent: int = None,
                         min_reviews_rating: int = None, search_index: str = None, sort: str = None,
                         item_page: int = None, item_count: int = None, exclude_zero_price: bool = False,
-                        exclude_zero_offers: bool = False) -> \
+                        exclude_zero_offers: bool = False, only_prime_delivery: bool = False) -> \
             Tuple[List[AmazonItem], bool]:
 
         if min_saving_percent is not None:
@@ -101,6 +101,9 @@ class AmazonApiCore:
                     if exclude_zero_offers:
                         continue
                 elif amazon_item.price_saving_amount_percentage < min_saving_percent:
+                    continue
+
+                if only_prime_delivery and not amazon_item.prime_delivery:
                     continue
 
                 list_item.append(amazon_item)
