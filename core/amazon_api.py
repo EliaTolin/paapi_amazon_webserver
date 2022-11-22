@@ -45,8 +45,10 @@ class AmazonApiCore:
         is_none = keywords or actor or artist or author or brand or search_index or title
 
         # Limit the item count
-        #item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
-        #item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
+        item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
+        if item_page > MAX_ITEM_PAGE_OFFER:
+            return []
+        # item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
 
         if is_none is None:
             raise MissingParameterAmazonException

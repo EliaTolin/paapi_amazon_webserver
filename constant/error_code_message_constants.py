@@ -1,0 +1,6 @@
+wrong_type_parameter = "wrong_type_parameter"
+empty_results = "empty_results"
+error_convert_json = "error_convert_json"
+empty_category = "empty_category"
+empty_wordlist = "empty_wordlist"
+limit_reached_products = "limit_reached_products"
