@@ -1,12 +1,14 @@
+from typing import Tuple, List
 from amazon_paapi import AmazonApi
 from amazon_paapi.sdk.models.sort_by import SortBy
-from amazon_paapi.errors.exceptions import TooManyRequests,InvalidArgument
+from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument
 from config import *
 from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
 from models.amazon_model import AmazonItem
 from core.redis_manager import redis_manager
 import threading
+import constant.error_code_message_constants as error_code_message
 
 
 class AmazonApiCore:
@@ -36,7 +38,9 @@ class AmazonApiCore:
                         title: str = None,
                         max_price: int = None, min_price: int = None, min_saving_percent: int = None,
                         min_reviews_rating: int = None, search_index: str = None, sort: str = None,
-                        item_page: int = None, item_count: int = None) -> list:
+                        item_page: int = None, item_count: int = None, exclude_zero_price: bool = False,
+                        exclude_zero_offers: bool = False) -> \
+            Tuple[List[AmazonItem], bool]:
 
         if min_saving_percent is not None:
             if min_saving_percent <= 0:
@@ -44,27 +48,41 @@ class AmazonApiCore:
 
         is_none = keywords or actor or artist or author or brand or search_index or title
 
-        # Limit the item count
-        item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
-        if item_page > MAX_ITEM_PAGE_OFFER:
-            return []
-        # item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
-
         if is_none is None:
             raise MissingParameterAmazonException
 
+        if search_index not in AmazonCategory.ITCategory:
+            raise CategoryNotExistException
+
+        # Limit the item count
+        item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
+        if item_page > MAX_ITEM_PAGE_OFFER:
+            return [], True
+
         sort_type = self._get_sort_type(sort)
+        list_item = []
+        limit_reached = False
         try:
             search_results = self.amazon.search_items(keywords=keywords,
-                                                      actor=actor, artist=artist, author=author, brand=brand, title=title,
+                                                      actor=actor, artist=artist, author=author, brand=brand,
+                                                      title=title,
                                                       max_price=max_price, min_price=min_price,
                                                       min_saving_percent=min_saving_percent,
-                                                      min_reviews_rating=min_reviews_rating, search_index=search_index,
+                                                      min_reviews_rating=min_reviews_rating,
+                                                      search_index=search_index,
                                                       sort_by=sort_type, item_page=item_page, item_count=item_count)
         except InvalidArgument:
             raise InvalidArgumentAmazonException
 
-        list_item = []
+        if search_results is None:
+            return [], True
+
+        if len(search_results.items) == 0:
+            return [], True
+
+        if len(search_results.items) != item_count:
+            limit_reached = True
+
         for item in search_results.items:
             try:
                 if item.offers is None:
@@ -75,20 +93,32 @@ class AmazonApiCore:
                     continue
 
                 amazon_item = AmazonItem(item)
+
+                if exclude_zero_price and amazon_item.price_actual == 0.0:
+                    continue
+
+                if amazon_item.price_saving_amount_percentage is None:
+                    if exclude_zero_offers:
+                        continue
+                elif amazon_item.price_saving_amount_percentage < min_saving_percent:
+                    continue
+
                 list_item.append(amazon_item)
 
             except UrlNotDefinedAmazonException:
                 continue
 
             except Exception:
-                raise Exception("generic_error")
+                raise Exception(error_code_message.generic_error)
 
-        return list_item
+        return list_item, limit_reached
 
     def get_category_offers(self, category, item_count: int = 10, item_page: int = 1,
-                            min_saving_percent: int = None, exclude_zero_offers: bool = False):
+                            min_saving_percent: int = None, exclude_zero_offers: bool = False) -> \
+            Tuple[List[AmazonItem], bool]:
+
         if (item_count * item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
-            return []
+            return [], True
 
         if min_saving_percent is not None:
             if min_saving_percent <= 0:
@@ -111,20 +141,16 @@ class AmazonApiCore:
 
                 while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
                     try:
-                        products = self.search_products(search_index=category, item_count=MAX_ITEM_COUNT_OFFER,
-                                                        item_page=page_download,
-                                                        min_saving_percent=min_saving_percent)
+                        products, limit_reached = self.search_products(search_index=category,
+                                                                       item_count=MAX_ITEM_COUNT_OFFER,
+                                                                       item_page=page_download,
+                                                                       min_saving_percent=min_saving_percent,
+                                                                       exclude_zero_offers=exclude_zero_offers)
                         if len(products) == 0:
                             break
                         for product in products:
-                            if min_saving_percent is not None:
-                                if product.price_saving_amount_percentage is None:
-                                    if exclude_zero_offers:
-                                        continue
-                                elif product.price_saving_amount_percentage < min_saving_percent:
-                                    continue
-                            redis_manager.redis_db.rpush(category, product.to_json())
 
+                            redis_manager.redis_db.rpush(category, product.to_json())
                         page_download += 1
 
                     except MissingParameterAmazonException:
@@ -141,10 +167,13 @@ class AmazonApiCore:
                             raise TooManyRequestAmazonException
                     else:
                         redis_manager.redis_db.delete(key_error_too_many)
+
+                    if limit_reached:
+                        break
+
                 redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
 
-        # print(category+" Finish mutex " + str(threading.get_ident()))
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
 
-        return redis_manager.redis_db.lrange(category, index_start, index_finish)
+        return redis_manager.redis_db.lrange(category, index_start, index_finish), False

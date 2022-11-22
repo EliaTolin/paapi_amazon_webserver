@@ -32,9 +32,10 @@ def get_category_offers_route():
     if category is None:
         return error_code_message.empty_category, 400
     try:
-        list_products = amazonApiCore.get_category_offers(category, item_count=item_count, item_page=item_page,
-                                                          min_saving_percent=min_saving_percent,
-                                                          exclude_zero_offers=exclude_zero_offers)
+        list_products, limit_reached = amazonApiCore.get_category_offers(category, item_count=item_count,
+                                                                         item_page=item_page,
+                                                                         min_saving_percent=min_saving_percent,
+                                                                         exclude_zero_offers=exclude_zero_offers)
 
     except CategoryNotExistException as e:
         return e.code_message, 400
@@ -56,7 +57,9 @@ def get_category_offers_route():
             return error_code_message.limit_reached_products, 204
         return error_code_message.empty_results, 204
 
-    return json.dumps(list_products)
+    if limit_reached:
+        return json.dumps(list_products), 206
+    return json.dumps(list_products), 200
 
 
 @amazon_route.route(amazon_routes.search_products_route, methods=['POST'])
@@ -80,16 +83,24 @@ def search_product_route():
         sort = request.values.get(amazon_params.sortParam, default=None)
         item_count = request.values.get(amazon_params.itemCountParam, type=int) or None
         item_page = request.values.get(amazon_params.itemPageParam, type=int) or None
+        exclude_zero_price = request.values.get(amazon_params.excludeZeroPriceParam, type=bool, default=False)
+        exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
+
     except ValueError:
         return error_code_message.wrong_type_parameter, 400
     try:
-        list_products = amazonApiCore.search_products(keywords=wordlist, actor=actor, artist=artist, author=author,
-                                                      brand=brand,
-                                                      title=title, max_price=max_price, min_price=min_price,
-                                                      min_saving_percent=min_saving_percent,
-                                                      min_reviews_rating=min_reviews_rating,
-                                                      search_index=search_index, sort=sort, item_page=item_page,
-                                                      item_count=item_count)
+        list_products, limit_reached = amazonApiCore.search_products(keywords=wordlist, actor=actor, artist=artist,
+                                                                     author=author,
+                                                                     brand=brand,
+                                                                     title=title, max_price=max_price,
+                                                                     min_price=min_price,
+                                                                     min_saving_percent=min_saving_percent,
+                                                                     min_reviews_rating=min_reviews_rating,
+                                                                     search_index=search_index, sort=sort,
+                                                                     item_page=item_page,
+                                                                     item_count=item_count,
+                                                                     exclude_zero_price=exclude_zero_price,
+                                                                     exclude_zero_offers=exclude_zero_offers)
     except MissingParameterAmazonException as e:
         return e.code_message, 400
 
@@ -105,7 +116,9 @@ def search_product_route():
         json_list = []
         for el in list_products:
             json_list.append(el.to_json())
-        return json.dumps(json_list)
+        if limit_reached:
+            return json.dumps(json_list), 206
+        return json.dumps(json_list), 200
 
     except ValueError:
         return error_code_message.error_convert_json, 500
