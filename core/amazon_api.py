@@ -1,7 +1,7 @@
 from typing import Tuple, List
 from amazon_paapi import AmazonApi
 from amazon_paapi.sdk.models.sort_by import SortBy
-from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument
+from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound
 from config import *
 from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
@@ -68,12 +68,17 @@ class AmazonApiCore:
                                                       actor=actor, artist=artist, author=author, brand=brand,
                                                       title=title,
                                                       max_price=max_price, min_price=min_price,
-                                                      min_saving_percent=min_saving_percent,
-                                                      min_reviews_rating=min_reviews_rating,
+                                                      # min_saving_percent=min_saving_percent,
+                                                      # min_reviews_rating=min_reviews_rating,
                                                       search_index=search_index,
                                                       sort_by=sort_type, item_page=item_page, item_count=item_count)
         except InvalidArgument:
             raise InvalidArgumentAmazonException
+        except ItemsNotFound:
+            return [], True
+
+        except TooManyRequests:
+            raise TooManyRequestAmazonException
 
         if search_results is None:
             return [], True
@@ -104,7 +109,7 @@ class AmazonApiCore:
                     if exclude_zero_offers:
                         continue
                 elif min_saving_percent is not None:
-                    if amazon_item.price_saving_amount_percentage < min_saving_percent:
+                    if amazon_item.price_saving_amount_percentage <= min_saving_percent:
                         continue
 
                 if only_prime_delivery is not None:
