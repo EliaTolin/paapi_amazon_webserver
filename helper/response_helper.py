@@ -8,7 +8,7 @@ def make_response(data="", status_code=generic_error_code_message.no_error):
         response = dict()
         response[response_constant.data_field] = data
         response[response_constant.status_field] = status_code
-        return json.dumps(response).replace("\"", "\'")
+        return json.dumps(response)
 
     except TypeError:
         raise TypeError
