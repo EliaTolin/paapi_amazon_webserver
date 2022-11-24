@@ -109,6 +109,9 @@ def search_product_route():
 
     except TooManyRequestAmazonException as e:
         return e.code_message, 500
+    
+    except RedisConnectionException as e:
+        return e.code_message, 500
 
     except CategoryNotExistException as e:
         return e.code_message, 400
