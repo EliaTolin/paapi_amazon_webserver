@@ -87,8 +87,8 @@ def search_product_route():
         min_reviews_rating = request.values.get(amazon_params.minReviewsRatingParam, type=int) or None
         search_index = request.values.get(amazon_params.searchIndexParam, default=None)
         sort = request.values.get(amazon_params.sortParam, default=None)
-        item_count = request.values.get(amazon_params.itemCountParam, type=int) or None
-        item_page = request.values.get(amazon_params.itemPageParam, type=int) or None
+        item_count = request.values.get(amazon_params.itemCountParam, type=int, default=10)
+        item_page = request.values.get(amazon_params.itemPageParam, type=int, default=1) or None
         exclude_zero_price = request.values.get(amazon_params.excludeZeroPriceParam, type=bool, default=False)
         exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
         only_prime_delivery = request.values.get(amazon_params.only_prime_delivery, type=bool, default=False)
