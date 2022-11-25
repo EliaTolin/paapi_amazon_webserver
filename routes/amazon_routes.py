@@ -54,7 +54,7 @@ def get_category_offers_route():
         return make_response(status_code=e.code_message), 400
 
     except ItemsNotFoundAmazonException as e:
-        return e.code_message, 204
+        return make_response(status_code=e.code_message), 204
 
     if len(list_products) == 0:
         if item_page > 1:
@@ -97,8 +97,8 @@ def search_product_route():
         only_prime_delivery = request.values.get(amazon_params.only_prime_delivery, type=bool, default=False)
 
     except ValueError:
-        return error_code_message.wrong_type_parameter, 400
         return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
+
     except TypeError:
         return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
 
@@ -145,7 +145,6 @@ def search_product_route():
         return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 200
 
     except ValueError:
-        return error_code_message.error_convert_json, 500
         return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
     except TypeError:
