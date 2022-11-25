@@ -8,7 +8,7 @@ from models.exceptions.amazon_exception import *
 from models.amazon_model import AmazonItem
 from core.redis_manager import redis_manager
 import threading
-import constant.error_code_message_constants as error_code_message
+import constant.exception.amazon_error_code_message as amazon_error_code_message
 import constant.database.database_constants as database_constants
 
 class AmazonApiCore:
@@ -123,7 +123,7 @@ class AmazonApiCore:
                 continue
 
             except Exception:
-                raise Exception(error_code_message.generic_error)
+                raise Exception(amazon_error_code_message.generic_error)
 
         return list_item, limit_reached
 

@@ -1,5 +1,5 @@
 from models.exceptions.base_exception import Error
-import constant.error_code_message_constants as error_message
+import constant.exception.amazon_error_code_message as error_message
 
 class InvalidArgumentAmazonException(Error):
     """The value provided in the request for atleast one parameter is invalid."""

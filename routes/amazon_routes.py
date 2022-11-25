@@ -1,11 +1,12 @@
 from flask import Blueprint, request
 from core.amazon_api import *
+from helper.response_helper import make_response
 from models.exceptions.amazon_exception import *
 from models.exceptions.redis_exception import *
 import constant.params.amazon_params_constants as amazon_params
-import constant.error_code_message_constants as error_code_message
+import constant.exception.amazon_error_code_message as amazon_error_code_message
+import constant.exception.generic_error_code_message as generic_error_code_message
 import constant.routes.amazon_routes_constants as amazon_routes
-import json
 
 amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.url_prefix_route)
 amazonApiCore = AmazonApiCore()
@@ -27,49 +28,54 @@ def get_category_offers_route():
         min_saving_percent = request.values.get(amazon_params.minSavingPercentParam, type=int) or None
         exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
     except ValueError:
-        return error_code_message.wrong_type_parameter, 400
+        return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
 
     if category is None:
-        return error_code_message.empty_category, 400
+        return make_response(status_code=amazon_error_code_message.empty_category), 400
     try:
         list_products, limit_reached = amazonApiCore.get_category_offers(category, item_count=item_count,
                                                                          item_page=item_page,
                                                                          min_saving_percent=min_saving_percent,
                                                                          exclude_zero_offers=exclude_zero_offers)
 
-    except CategoryNotExistException as e:
-        return e.code_message, 400
+    except InvalidArgumentAmazonException as e:
+        return make_response(status_code=e.code_message), 400
 
     except MissingParameterAmazonException as e:
-        return e.code_message, 400
+        return make_response(status_code=e.code_message), 400
 
     except TooManyRequestAmazonException as e:
-        return e.code_message, 500
+        return make_response(status_code=e.code_message), 500
 
     except RedisConnectionException as e:
-        return e.code_message, 500
+        return make_response(status_code=e.code_message), 500
 
-    except InvalidArgumentAmazonException as e:
-        return e.code_message, 400
+    except CategoryNotExistException as e:
+        return make_response(status_code=e.code_message), 400
 
     except ItemsNotFoundAmazonException as e:
         return e.code_message, 204
 
     if len(list_products) == 0:
         if item_page > 1:
-            return error_code_message.limit_reached_products, 204
-        return error_code_message.empty_results, 204
+            return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
+        return make_response(status_code=amazon_error_code_message.empty_results), 204
+    try:
+        if limit_reached:
+            return make_response(data=list_products), 206
+        return make_response(data=list_products), 200
 
-    if limit_reached:
-        return json.dumps(list_products), 206
-    return json.dumps(list_products), 200
+    except ValueError:
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
+    except TypeError:
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
 @amazon_route.route(amazon_routes.search_products_route, methods=['POST'])
 def search_product_route():
     wordlist = request.values.get(amazon_params.wordlistParam) or None
     if wordlist is None:
-        return error_code_message.empty_wordlist, 400
+        return make_response(status_code=amazon_error_code_message.empty_wordlist), 400
 
     # Get parameters
     try:
@@ -84,14 +90,18 @@ def search_product_route():
         min_reviews_rating = request.values.get(amazon_params.minReviewsRatingParam, type=int) or None
         search_index = request.values.get(amazon_params.searchIndexParam, default=None)
         sort = request.values.get(amazon_params.sortParam, default=None)
-        item_count = request.values.get(amazon_params.itemCountParam, type=int) or None
-        item_page = request.values.get(amazon_params.itemPageParam, type=int) or None
+        item_count = request.values.get(amazon_params.itemCountParam, type=int, default=10)
+        item_page = request.values.get(amazon_params.itemPageParam, type=int, default=1) or None
         exclude_zero_price = request.values.get(amazon_params.excludeZeroPriceParam, type=bool, default=False)
         exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
         only_prime_delivery = request.values.get(amazon_params.only_prime_delivery, type=bool, default=False)
 
     except ValueError:
         return error_code_message.wrong_type_parameter, 400
+        return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
+    except TypeError:
+        return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
+
     try:
         list_products, limit_reached = amazonApiCore.search_products(keywords=wordlist, actor=actor, artist=artist,
                                                                      author=author,
@@ -107,32 +117,39 @@ def search_product_route():
                                                                      exclude_zero_offers=exclude_zero_offers,
                                                                      only_prime_delivery=only_prime_delivery)
     except MissingParameterAmazonException as e:
-        return e.code_message, 400
+        return make_response(status_code=e.code_message), 400
 
     except TooManyRequestAmazonException as e:
-        return e.code_message, 500
+        return make_response(status_code=e.code_message), 500
+    
+    except RedisConnectionException as e:
+        return make_response(status_code=e.code_message), 500
 
     except CategoryNotExistException as e:
-        return e.code_message, 400
-
+        return make_response(status_code=e.code_message), 400
+    
     except ItemsNotFoundAmazonException as e:
-        return e.code_message, 204
+        return make_response(status_code=e.code_message), 204
     
     if len(list_products) == 0:
         if item_page > 1:
-            return error_code_message.limit_reached_products, 204
-        return error_code_message.empty_results, 204
+            return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
+        return make_response(status_code=amazon_error_code_message.empty_results), 204
 
     try:
-        json_list = []
+        products_json_list = []
         for el in list_products:
-            json_list.append(el.to_json())
+            products_json_list.append(el.to_json())
         if limit_reached:
-            return json.dumps(json_list), 206
-        return json.dumps(json_list), 200
+            return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 206
+        return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 200
 
     except ValueError:
         return error_code_message.error_convert_json, 500
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
+
+    except TypeError:
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
 @amazon_route.route(amazon_routes.add_category_preference, methods=['POST'])
@@ -141,4 +158,3 @@ def add_category_preference():
     for category in list_search_category:
         redis_manager.redis_db.incr(category+database_constants.key_suffix_preference)
     return 200
-
