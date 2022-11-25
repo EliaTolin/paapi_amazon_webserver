@@ -74,8 +74,9 @@ class AmazonApiCore:
                                                       sort_by=sort_type, item_page=item_page, item_count=item_count)
         except InvalidArgument:
             raise InvalidArgumentAmazonException
+
         except ItemsNotFound:
-            return [], True
+            raise ItemsNotFoundAmazonException
 
         except TooManyRequests:
             raise TooManyRequestAmazonException
@@ -169,6 +170,9 @@ class AmazonApiCore:
 
                     except MissingParameterAmazonException:
                         raise MissingParameterAmazonException
+
+                    except ItemsNotFound:
+                        raise ItemsNotFoundAmazonException
 
                     except TooManyRequests:
                         redis_manager.redis_db.set(key_error_too_many, page_download)

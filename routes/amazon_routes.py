@@ -52,6 +52,9 @@ def get_category_offers_route():
     except InvalidArgumentAmazonException as e:
         return e.code_message, 400
 
+    except ItemsNotFoundAmazonException as e:
+        return e.code_message, 204
+
     if len(list_products) == 0:
         if item_page > 1:
             return error_code_message.limit_reached_products, 204
@@ -111,6 +114,9 @@ def search_product_route():
 
     except CategoryNotExistException as e:
         return e.code_message, 400
+
+    except ItemsNotFoundAmazonException as e:
+        return e.code_message, 204
     
     if len(list_products) == 0:
         if item_page > 1:

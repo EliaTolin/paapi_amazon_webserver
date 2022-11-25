@@ -15,7 +15,7 @@ class CategoryNotExistException(Error):
 
 class UrlNotDefinedAmazonException(Error):
     """Url not defined """
-    code_message = error_message.url_not_definited
+    code_message = error_message.url_not_defined
     pass
 
 
@@ -37,3 +37,8 @@ class TooManyRequestAmazonException(Error):
         https://github.com/sergioteula/python-amazon-paapi/discussions/59"""
     code_message = error_message.too_many_request
     pass
+
+
+class ItemsNotFoundAmazonException(Error):
+    """except amazon_paapi.errors.exceptions.ItemsNotFound"""
+    code_message = error_message.items_not_found
