@@ -55,11 +55,12 @@ class AmazonItem:
 
         if product.offers.listings[0].saving_basis is not None:
             if product.offers.listings[0].saving_basis.amount is not None:
-                self.price_base =product.offers.listings[0].saving_basis.amount
+                self.price_base = product.offers.listings[0].saving_basis.amount
             else:
                 self.price_base = None
             if product.offers.listings[0].delivery_info is not None:
                 self.prime_delivery = product.offers.listings[0].delivery_info.is_prime_eligible
+                self.amazon_fulfilled = product.offers.listings[0].delivery_info.is_amazon_fulfilled
             else:
                 self.prime_delivery = None
         else:
@@ -83,7 +84,7 @@ class AmazonItem:
             self.score = product.score
         else:
             self.score = None
-
+            
         if product.images.primary.large is not None:
             self.images_large = product.images.primary.large
         else:
@@ -99,8 +100,10 @@ class AmazonItem:
         else:
             self.images_small = None
 
+
         if product.detail_page_url is not None:
             self.product_url = product.detail_page_url
+            self.share_url = product.detail_page_url
         else:
             raise UrlNotDefinedAmazonException
 
