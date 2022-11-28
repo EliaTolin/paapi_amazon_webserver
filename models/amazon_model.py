@@ -62,6 +62,7 @@ class AmazonItem:
                 self.prime_delivery = product.offers.listings[0].delivery_info.is_prime_eligible
                 self.amazon_fulfilled = product.offers.listings[0].delivery_info.is_amazon_fulfilled
             else:
+                self.amazon_fulfilled = None
                 self.prime_delivery = None
         else:
             self.price_base = None
