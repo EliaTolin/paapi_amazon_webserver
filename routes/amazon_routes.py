@@ -156,4 +156,4 @@ def add_category_preference():
     list_search_category = request.values.getlist(amazon_params.list_category_preference)
     for category in list_search_category:
         redis_manager.redis_db.incr(category+database_constants.key_suffix_preference)
-    return 200
+    return make_response(status_code=generic_error_code_message.no_error),200
