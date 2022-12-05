@@ -37,7 +37,7 @@ def get_category_offers_route():
                                                                          item_page=item_page,
                                                                          min_saving_percent=min_saving_percent,
                                                                          exclude_zero_offers=exclude_zero_offers)
-
+        print(len(list_products))
     except InvalidArgumentAmazonException as e:
         return make_response(status_code=e.code_message), 400
 

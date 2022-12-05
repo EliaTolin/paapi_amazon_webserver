@@ -1,3 +1,4 @@
+import random
 from typing import Tuple, List
 from amazon_paapi import AmazonApi
 from amazon_paapi.sdk.models.sort_by import SortBy
@@ -84,6 +85,9 @@ class AmazonApiCore:
         if search_results is None:
             return [], True
 
+        if search_results.items is None:
+            return [], True
+
         if len(search_results.items) == 0:
             return [], True
 
@@ -154,6 +158,8 @@ class AmazonApiCore:
                 if value_key is not None:
                     page_download = int(value_key)
 
+                product_lists = []
+
                 while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
                     try:
                         products, limit_reached = self.search_products(search_index=category,
@@ -164,8 +170,8 @@ class AmazonApiCore:
                         if len(products) == 0:
                             break
                         for product in products:
-
-                            redis_manager.redis_db.rpush(category, product.to_json())
+                            product_lists.append(product)
+                            # redis_manager.redis_db.rpush(category, product.to_json())
                         page_download += 1
 
                     except MissingParameterAmazonException:
@@ -175,6 +181,8 @@ class AmazonApiCore:
                         raise ItemsNotFoundAmazonException
 
                     except TooManyRequests:
+                        random.shuffle(product_lists)
+                        redis_manager.redis_db.lpush(category, *product_lists)
                         redis_manager.redis_db.set(key_error_too_many, page_download)
                         ttl_category = redis_manager.redis_db.ttl(category)
                         ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
@@ -188,7 +196,8 @@ class AmazonApiCore:
 
                     if limit_reached:
                         break
-
+                random.shuffle(product_lists)
+                redis_manager.redis_db.lpush(category, *product_lists)
                 redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
 
         index_start = (item_page - 1) * item_count
