@@ -173,7 +173,7 @@ class AmazonApiCore:
                         if len(products) == 0:
                             break
                         for product in products:
-                            product_lists.append(product)
+                            product_lists.append(product.to_json())
                             # redis_manager.redis_db.rpush(category, product.to_json())
                         page_download += 1
 
