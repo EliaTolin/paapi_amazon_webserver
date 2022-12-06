@@ -150,7 +150,10 @@ class AmazonApiCore:
 
         key_error_too_many = category + database_constants.key_suffix_error_too_many
 
-        if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+        expiration_time = redis_manager.redis_db.ttl(category)
+
+        if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many)\
+                or expiration_time == -1:
             with self.mutex:
                 # Check if exist previous error
                 page_download = 1
