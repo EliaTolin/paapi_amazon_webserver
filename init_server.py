@@ -1,4 +1,4 @@
-from core.redis_manager import redis_manager
+from singleton.redis_manager import redis_manager
 import helper.debug_message as debug_message
 from models.amazon_category import AmazonCategory
 import constant.database.database_constants as db_constant
@@ -15,7 +15,7 @@ def init_server() -> bool:
     category_counter = 0
 
     for category in AmazonCategory.ITCategory:
-        key = category+db_constant.key_suffix_preference
+        key = category + db_constant.key_suffix_preference
         if redis_manager.redis_db.get(key) is None:
             redis_manager.redis_db.set(key, 1)
             category_counter += 1
