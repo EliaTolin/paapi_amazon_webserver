@@ -49,26 +49,47 @@ def get_category_offers_route():
         #                                                                  exclude_zero_offers=exclude_zero_offers)
         key_error_too_many = category + database_constants.key_suffix_error_too_many
         if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
-            tasks = celery.control.inspect()
-            active_tasks = tasks.active()
-            for workers in active_tasks:
-                for t in active_tasks[workers]:
-                    if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
-                        task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
+            arguments = {"item_count": item_count, "item_page": item_page,
+                         "exclude_zero_offers": exclude_zero_offers}
+            if category:
+                arguments["category"] = category
+            if min_saving_percent:
+                arguments["min_saving_percent"] = min_saving_percent
+
+            amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+
+        tasks = celery.control.inspect()
+        active_tasks = tasks.active()
+        for workers in active_tasks:
+            for t in active_tasks[workers]:
+                if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
+                    task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
+                    if task.info['category'] and task.info['category'] == category:
                         while not task.ready():
                             time.sleep(1)
                             # Check if the task is for this category
-                            if task.info['category'] and task.info['category'] == category:
-                                if task.info['page'] and task.info['page'] >= item_page:
-                                    if task.info['total_element'] and \
-                                            task.info['total_element'] >= item_page * item_count:
-                                        index_start = (item_page - 1) * item_count
-                                        index_finish = (item_page * item_count) - 1
-                                        products_list = redis_manager.lrange(category, index_start, index_finish), False
+                            if task.info['page'] and task.info['page'] >= item_page:
+                                if task.info['total_element'] and \
+                                        task.info['total_element'] >= item_page * item_count:
+                                    break
 
-        return make_response(data=products_list), 200
+        index_start = (item_page - 1) * item_count
+        index_finish = (item_page * item_count) - 1
+        products_list = redis_manager.lrange(category, index_start, index_finish), False
 
+        if len(products_list) == 0:
+            if item_page > 1:
+                return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
+            return make_response(status_code=amazon_error_code_message.empty_results), 204
+        try:
+            if products_list:
+                return make_response(data=products_list), 206
+            return make_response(data=products_list), 200
 
+        except ValueError:
+            return make_response(status_code=generic_error_code_message.error_convert_json), 500
+        except TypeError:
+            return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
     except InvalidArgumentAmazonException as e:
         return make_response(status_code=e.code_message), 400
@@ -87,20 +108,6 @@ def get_category_offers_route():
 
     except ItemsNotFoundAmazonException as e:
         return make_response(status_code=e.code_message), 204
-
-    if len(list_products) == 0:
-        if item_page > 1:
-            return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
-        return make_response(status_code=amazon_error_code_message.empty_results), 204
-    try:
-        if limit_reached:
-            return make_response(data=list_products), 206
-        return make_response(data=list_products), 200
-
-    except ValueError:
-        return make_response(status_code=generic_error_code_message.error_convert_json), 500
-    except TypeError:
-        return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
 @amazon_route.route(amazon_routes.search_products_route, methods=['POST'])
