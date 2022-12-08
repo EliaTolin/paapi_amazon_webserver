@@ -18,3 +18,4 @@ Werkzeug==2.2.2
 wrapt==1.14.1
 zipp==3.9.0
 python-dotenv==0.21.0
+celery~=5.2.7

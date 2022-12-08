@@ -1,12 +1,11 @@
-from flask import Flask
-
-import init_server as init
-from routes.routes import base_api
-
 import config
+import init_server as init
+from init_services.celery_init import make_celery
+from init_services.flask_init import make_flask
 
-app = Flask(__name__)
-app.register_blueprint(base_api)
+
+app = make_flask()
+celery = make_celery(app)
 
 
 @app.route('/')
