@@ -11,7 +11,7 @@ import constant.routes.amazon_routes_constants as amazon_routes
 import constant.tasks.tasks_name_constants as tasks_name
 import core.tasks.amazon_task as amazon_tasks
 from singleton.redis_manager import *
-from init_services.celery_services import celery_app
+from services.celery_services import celery_app
 import time
 
 amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.url_prefix_route)
@@ -55,7 +55,8 @@ def get_category_offers_route():
             if min_saving_percent:
                 arguments["min_saving_percent"] = min_saving_percent
 
-            amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+            tasks = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+            # Now check the state of the task
 
         tasks = celery_app.control.inspect()
         active_tasks = tasks.active()

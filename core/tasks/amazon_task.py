@@ -3,12 +3,15 @@ import time
 from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound
 from config import *
 from constant.tasks.tasks_name_constants import TASK_GET_OFFERS_AMAZON
+from core.amazon_api import AmazonApiCore
 from helper.celery_meta_helper import get_meta, get_final_meta
 from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
 from singleton.redis_manager import redis_manager
 import constant.database.database_constants as database_constants
-from init_services.celery_services import celery_app
+from services.celery_services import celery_app
+
+amazonApiCore = AmazonApiCore()
 
 
 @celery_app.task(name=TASK_GET_OFFERS_AMAZON, bind=True)
@@ -47,11 +50,11 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
         while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
             try:
                 product_lists = []
-                products, limit_reached = self.search_products(search_index=category,
-                                                               item_count=MAX_ITEM_COUNT_OFFER,
-                                                               item_page=page_download,
-                                                               min_saving_percent=min_saving_percent,
-                                                               exclude_zero_offers=exclude_zero_offers)
+                products, limit_reached = amazonApiCore.search_products(search_index=category,
+                                                                        item_count=MAX_ITEM_COUNT_OFFER,
+                                                                        item_page=page_download,
+                                                                        min_saving_percent=min_saving_percent,
+                                                                        exclude_zero_offers=exclude_zero_offers)
                 if len(products) == 0:
                     break
                 for product in products:
