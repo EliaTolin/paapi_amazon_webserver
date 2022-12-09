@@ -8,10 +8,10 @@ from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
 from singleton.redis_manager import redis_manager
 import constant.database.database_constants as database_constants
-from main import celery
+from init_services.celery_services import celery_app
 
 
-@celery.task(name=TASK_GET_OFFERS_AMAZON, bind=True)
+@celery_app.task(name=TASK_GET_OFFERS_AMAZON, bind=True)
 def get_category_offers(self, category, item_count: int = 10, item_page: int = 1,
                         min_saving_percent: int = None, exclude_zero_offers: bool = False):
     if (item_count * item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:

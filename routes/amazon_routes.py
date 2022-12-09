@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify
-
 from constant.database import database_constants
 from core.amazon_api import *
 from helper.response_helper import make_response
@@ -12,7 +11,7 @@ import constant.routes.amazon_routes_constants as amazon_routes
 import constant.tasks.tasks_name_constants as tasks_name
 import core.tasks.amazon_task as amazon_tasks
 from singleton.redis_manager import *
-from main import celery
+from init_services.celery_services import celery_app
 import time
 
 amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.url_prefix_route)
@@ -58,7 +57,7 @@ def get_category_offers_route():
 
             amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
 
-        tasks = celery.control.inspect()
+        tasks = celery_app.control.inspect()
         active_tasks = tasks.active()
         for workers in active_tasks:
             for t in active_tasks[workers]:
