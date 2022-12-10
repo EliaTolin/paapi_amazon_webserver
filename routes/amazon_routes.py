@@ -1,3 +1,4 @@
+import celery.states
 from flask import Blueprint, request, jsonify
 from constant.database import database_constants
 from core.amazon_api import *
@@ -35,7 +36,7 @@ def list_to_json(list_items):
     return json_list
 
 
-def handle_error(exc, task_id, args, kwargs, einfo):
+def handle_error(exc, task_id):
     # Handle the exception
     if isinstance(exc, ValueError):
         print('Task {} failed because y cannot be 0'.format(task_id))
@@ -104,10 +105,13 @@ def get_category_offers_route():
                 if min_saving_percent:
                     arguments["min_saving_percent"] = min_saving_percent
 
-                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments, link_error=handle_error)
+                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
                 while not task_amazon.ready():
                     time.sleep(1)
                     # Check if the task is for this category
+                    if task_amazon.status == celery.states.FAILURE:
+                        print(task_amazon.info)
+                        handle_error(task_amazon.info, task_amazon.id)
                     if task_amazon.info:
                         if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
                             if task_amazon.info['total_element'] and \
