@@ -82,7 +82,7 @@ def get_category_offers_route():
                 while not task_amazon.ready():
                     time.sleep(1)
                     # Check if the task is for this category
-                    if task_amazon.info is not None:
+                    if task_amazon.info:
                         if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
                             if task_amazon.info['total_element'] and \
                                     task_amazon.info['total_element'] >= item_page * item_count:
@@ -97,8 +97,6 @@ def get_category_offers_route():
                 return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
             return make_response(status_code=amazon_error_code_message.empty_results), 204
         try:
-            if products_list:
-                return make_response(data=products_list), 206
             return make_response(data=products_list), 200
 
         except ValueError:
