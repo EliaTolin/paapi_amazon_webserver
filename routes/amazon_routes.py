@@ -82,10 +82,11 @@ def get_category_offers_route():
                 while not task_amazon.ready():
                     time.sleep(1)
                     # Check if the task is for this category
-                    if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
-                        if task_amazon.info['total_element'] and \
-                                task_amazon.info['total_element'] >= item_page * item_count:
-                            break
+                    if task_amazon.info is not None:
+                        if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
+                            if task_amazon.info['total_element'] and \
+                                    task_amazon.info['total_element'] >= item_page * item_count:
+                                break
 
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
