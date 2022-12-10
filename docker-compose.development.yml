@@ -2,6 +2,7 @@ version: '3'
 
 services:
   redis:
+    hostname: redis
     container_name: redis_db
     image: redis
     volumes:
@@ -21,9 +22,8 @@ services:
     expose:
       - "5000"
     environment:
-      FLASK_DEBUG: "on"
-      FLASK_APP: main:flask_app
-    command: flask run --host=0.0.0.0 --port=5000
+      REDIS_DATABASE_HOST: "redis"
+    command: ['python3', './main.py']
     depends_on:
       - redis
     networks:
@@ -57,8 +57,6 @@ services:
       - worker
     networks:
         - offertiamo_development
-
-    
 
 networks:
     offertiamo_development:

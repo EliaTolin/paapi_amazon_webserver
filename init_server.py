@@ -2,13 +2,13 @@ from singleton.redis_manager import redis_manager
 import helper.debug_message as debug_message
 from models.amazon_category import AmazonCategory
 import constant.database.database_constants as db_constant
-
+import config
 
 def init_server() -> bool:
     debug_message.show_message_debug("START INIT SERVER!", debug_message.TypeMessage.INFO)
     # Check if redis is available
     if not redis_manager.is_redis_available():
-        debug_message.show_message_debug("REDIS NOT CONNECTED!", debug_message.TypeMessage.ERROR)
+        debug_message.show_message_debug("REDIS NOT CONNECTED! "+config.REDIS_DATABASE_HOST, debug_message.TypeMessage.ERROR)
         return False
     # Start init the categories preferences
     debug_message.show_message_debug("INIT REDIS!", debug_message.TypeMessage.INFO)
