@@ -18,6 +18,16 @@ amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.
 amazonApiCore = AmazonApiCore()
 
 
+def is_running_tasked_name(name_task):
+    tasks = celery_app.control.inspect()
+    active_tasks = tasks.active()
+    for workers in active_tasks:
+        for t in active_tasks[workers]:
+            if t['name'] and t['name'] == name_task:
+                return True
+    return False
+
+
 def list_to_json(list_items):
     json_list = []
     for item in list_items:
@@ -42,40 +52,44 @@ def get_category_offers_route():
     # if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
     products_list = []
     try:
-        # list_products, limit_reached = amazonApiCore.get_category_offers(category, item_count=item_count,
-        #                                                                  item_page=item_page,
-        #                                                                  min_saving_percent=min_saving_percent,
-        #                                                                  exclude_zero_offers=exclude_zero_offers)
-        key_error_too_many = category + database_constants.key_suffix_error_too_many
-        if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
-            arguments = {"item_count": item_count, "item_page": item_page,
-                         "exclude_zero_offers": exclude_zero_offers}
-            if category:
-                arguments["category"] = category
-            if min_saving_percent:
-                arguments["min_saving_percent"] = min_saving_percent
+        completed_key = category + database_constants.key_suffix_completed_data
+        if not redis_manager.redis_db.exists(category) or not redis_manager.redis_db.get(completed_key):
+            tasks = celery_app.control.inspect()
+            active_tasks = tasks.active()
+            for workers in active_tasks:
+                for t in active_tasks[workers]:
+                    if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
+                        task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
+                        if task.info['category'] and task.info['category'] == category:
+                            while not task.ready():
+                                time.sleep(1)
+                                # Check if the task is for this category
+                                if task.info['page'] and task.info['page'] >= item_page:
+                                    if task.info['total_element'] and \
+                                            task.info['total_element'] >= item_page * item_count:
+                                        break
 
-            tasks = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
-            # Now check the state of the task
+            key_error_too_many = category + database_constants.key_suffix_error_too_many
+            if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+                arguments = {"item_count": item_count, "item_page": item_page,
+                             "exclude_zero_offers": int(exclude_zero_offers)}
+                if category:
+                    arguments["category"] = category
+                if min_saving_percent:
+                    arguments["min_saving_percent"] = min_saving_percent
 
-        tasks = celery_app.control.inspect()
-        active_tasks = tasks.active()
-        for workers in active_tasks:
-            for t in active_tasks[workers]:
-                if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
-                    task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
-                    if task.info['category'] and task.info['category'] == category:
-                        while not task.ready():
-                            time.sleep(1)
-                            # Check if the task is for this category
-                            if task.info['page'] and task.info['page'] >= item_page:
-                                if task.info['total_element'] and \
-                                        task.info['total_element'] >= item_page * item_count:
-                                    break
+                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+                while not task_amazon.ready():
+                    time.sleep(1)
+                    # Check if the task is for this category
+                    if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
+                        if task_amazon.info['total_element'] and \
+                                task_amazon.info['total_element'] >= item_page * item_count:
+                            break
 
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
-        products_list = redis_manager.lrange(category, index_start, index_finish), False
+        products_list = redis_manager.redis_db.lrange(category, index_start, index_finish), False
 
         if len(products_list) == 0:
             if item_page > 1:
