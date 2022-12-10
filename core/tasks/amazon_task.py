@@ -38,15 +38,10 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
                                                  "exc_message": ItemsNotFoundAmazonException.code_message})
         raise e
 
-    # item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
-    # item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
-
     key_error_too_many = category + database_constants.key_suffix_error_too_many
     start_time = time.perf_counter()
     total_element = 0
 
-    # if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
-    # with self.mutex:
     # Check if exist previous error
     completed_key = category + database_constants.key_suffix_completed_data
     redis_manager.redis_db.set(completed_key, 0)
@@ -88,8 +83,6 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             raise ItemsNotFoundAmazonException
 
         except TooManyRequests:
-            # random.shuffle(product_lists)
-            # redis_manager.redis_db.lpush(category, *product_lists)
             redis_manager.redis_db.set(key_error_too_many, page_download)
             ttl_category = redis_manager.redis_db.ttl(category)
             ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
