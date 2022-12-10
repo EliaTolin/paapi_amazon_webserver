@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  redis:
+    container_name: redis_db
+    image: redis
+    volumes:
+      - ./data:/data
+    expose: 
+      - "6379"
+    networks:
+      - offertiamo_development
+
+  web:
+    container_name: webserver_flask
+    build: .
+    volumes:
+      - .:/code
+    ports:
+      - "5000:5000"
+    expose:
+      - "5000"
+    environment:
+      FLASK_DEBUG: "on"
+      FLASK_APP: main:flask_app
+    command: flask run --host=0.0.0.0 --port=5000
+    depends_on:
+      - redis
+    networks:
+      - offertiamo_development
+    
+  worker:
+    container_name: worker_celery
+    build: .
+    volumes:
+      - .:/code
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: celery -A services.celery_services.celery_app worker
+    depends_on:
+      - redis
+    networks:
+      - offertiamo_development
+
+  monitor:
+    container_name: monitor_celery
+    build: .
+    ports:
+     - "5555:5555"
+    command:  ['celery', 'flower']
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      - redis
+      - worker
+    networks:
+        - offertiamo_development
+
+    
+
+networks:
+    offertiamo_development:
