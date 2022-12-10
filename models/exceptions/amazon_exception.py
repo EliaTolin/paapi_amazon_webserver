@@ -1,6 +1,7 @@
 from models.exceptions.base_exception import Error
 import constant.exception.amazon_error_code_message as error_message
 
+
 class InvalidArgumentAmazonException(Error):
     """The value provided in the request for atleast one parameter is invalid."""
     code_message = error_message.invalid_arguments
@@ -10,6 +11,10 @@ class InvalidArgumentAmazonException(Error):
 class CategoryNotExistException(Error):
     """Category not exists"""
     code_message = error_message.category_not_exist
+
+    def __dict__(self):
+        return {"code_message": self.code_message}
+
     pass
 
 

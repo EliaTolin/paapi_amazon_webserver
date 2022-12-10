@@ -14,23 +14,29 @@ from services.celery_services import celery_app
 amazonApiCore = AmazonApiCore()
 
 
-@celery_app.task(name=TASK_GET_OFFERS_AMAZON, bind=True)
+@celery_app.task(name=TASK_GET_OFFERS_AMAZON, bind=True, propagate=True, max_retries=5)
 def get_category_offers(self, category, item_count: int = 10, item_page: int = 1,
                         min_saving_percent: int = None, exclude_zero_offers: int = 0):
-    if (item_count * item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
-        self.update_state(state='REVOKED',
-                          meta={'error': 'LIMIT_REACHED'})
+    try:
+        if (item_count * item_page) > MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
+            self.update_state(state='REVOKED',
+                              meta={'error': 'LIMIT_REACHED'})
 
-    if min_saving_percent is not None:
-        if min_saving_percent <= 0:
-            self.update_state(state='FAILURE',
-                              meta={'error': 'InvalidArgument'})
-            raise InvalidArgument
+        if min_saving_percent is not None:
+            if min_saving_percent <= 0:
+                raise InvalidArgument
 
-    if category not in AmazonCategory.ITCategory:
-        self.update_state(state='FAILURE',
-                          meta={'error': CategoryNotExistException.code_message})
-        raise CategoryNotExistException
+        if category not in AmazonCategory.ITCategory:
+            raise CategoryNotExistException
+
+    except InvalidArgument as e:
+        self.update_state(state="FAILURE", meta={"exc_type": type(e).__name__,
+                                                 "exc_message": str(e)})
+        raise e
+    except CategoryNotExistException as e:
+        self.update_state(state="FAILURE", meta={"exc_type": type(ItemsNotFoundAmazonException).__name__,
+                                                 "exc_message": ItemsNotFoundAmazonException.code_message})
+        raise e
 
     # item_count = MAX_ITEM_COUNT_OFFER if item_count > MAX_ITEM_COUNT_OFFER else item_count
     # item_page = MAX_ITEM_PAGE_OFFER if item_page > MAX_ITEM_PAGE_OFFER else item_page
@@ -48,6 +54,7 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
     value_key = redis_manager.redis_db.get(key_error_too_many)
     if value_key is not None:
         page_download = int(value_key)
+    limit_reached = False
 
     while redis_manager.redis_db.llen(category) < MAX_ITEM_COUNT_OFFER * MAX_ITEM_PAGE_OFFER:
         try:
@@ -71,14 +78,13 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
                                             category=category))
             page_download += 1
 
-        except MissingParameterAmazonException:
-            self.update_state(state='FAILURE',
-                              meta={'error': MissingParameterAmazonException.code_message})
+        except MissingParameterAmazonException as e:
+            self.update_state(state="FAILURE", meta={"exc_type": type(e).__name__, "exc_message": e.code_message})
             raise MissingParameterAmazonException
 
-        except ItemsNotFound:
-            self.update_state(state='FAILURE',
-                              meta={'error': ItemsNotFoundAmazonException.code_message})
+        except ItemsNotFound as e:
+            self.update_state(state="FAILURE", meta={"exc_type": type(ItemsNotFoundAmazonException).__name__,
+                                                     "exc_message": ItemsNotFoundAmazonException.code_message})
             raise ItemsNotFoundAmazonException
 
         except TooManyRequests:
@@ -89,10 +95,10 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
             redis_manager.redis_db.expire(key_error_too_many, ttl_category)
             if page_download > 0:
-                break
+                self.retry(countdown=2)
             else:
-                self.update_state(state='FAILURE',
-                                  meta={'error': TooManyRequestAmazonException.code_message})
+                self.update_state(state="FAILURE", meta={"exc_type": type(TooManyRequestAmazonException).__name__,
+                                                         "exc_message": TooManyRequestAmazonException.code_message})
                 raise TooManyRequestAmazonException
         else:
             completed_key = category + database_constants.key_suffix_completed_data
@@ -105,10 +111,6 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
         if limit_reached:
             break
 
-    # index_start = (item_page - 1) * item_count
-    # index_finish = (item_page * item_count) - 1
-    #
-    # return redis_manager.redis_db.lrange(category, index_start, index_finish), False
     total_time = start_time - time.perf_counter()
 
     return get_final_meta(total_time_s=total_time, total_element=total_element, category=category)

@@ -35,6 +35,32 @@ def list_to_json(list_items):
     return json_list
 
 
+def handle_error(exc, task_id, args, kwargs, einfo):
+    # Handle the exception
+    if isinstance(exc, ValueError):
+        print('Task {} failed because y cannot be 0'.format(task_id))
+    elif isinstance(exc, TypeError):
+        print('Task {} failed because x and y must be integers'.format(task_id))
+
+    elif isinstance(exc, InvalidArgumentAmazonException):
+        raise InvalidArgumentAmazonException
+
+    elif isinstance(exc, MissingParameterAmazonException):
+        raise MissingParameterAmazonException
+
+    elif isinstance(exc, TooManyRequestAmazonException):
+        raise TooManyRequestAmazonException
+
+    elif isinstance(exc, RedisConnectionException):
+        raise RedisConnectionException
+
+    elif isinstance(exc, CategoryNotExistException):
+        raise CategoryNotExistException
+
+    elif isinstance(exc, ItemsNotFoundAmazonException):
+        raise ItemsNotFoundAmazonException
+
+
 @amazon_route.route(amazon_routes.get_offers_route, methods=['POST'])
 def get_category_offers_route():
     try:
@@ -78,7 +104,7 @@ def get_category_offers_route():
                 if min_saving_percent:
                     arguments["min_saving_percent"] = min_saving_percent
 
-                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments, link_error=handle_error)
                 while not task_amazon.ready():
                     time.sleep(1)
                     # Check if the task is for this category
@@ -87,7 +113,6 @@ def get_category_offers_route():
                             if task_amazon.info['total_element'] and \
                                     task_amazon.info['total_element'] >= item_page * item_count:
                                 break
-
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
         products_list = redis_manager.redis_db.lrange(category, index_start, index_finish), False
