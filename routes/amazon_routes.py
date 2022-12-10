@@ -1,4 +1,5 @@
 import celery.states
+from celery.exceptions import MaxRetriesExceededError
 from flask import Blueprint, request, jsonify
 from constant.database import database_constants
 from core.amazon_api import *
@@ -42,6 +43,10 @@ def handle_error(exc, task_id):
         print('Task {} failed because y cannot be 0'.format(task_id))
     elif isinstance(exc, TypeError):
         print('Task {} failed because x and y must be integers'.format(task_id))
+        raise GenericErrorAmazonException
+
+    elif isinstance(exc, MaxRetriesExceededError):
+        raise TooManyRequestAmazonException
 
     elif isinstance(exc, InvalidArgumentAmazonException):
         raise InvalidArgumentAmazonException

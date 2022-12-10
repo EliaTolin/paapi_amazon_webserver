@@ -73,7 +73,7 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             random.shuffle(product_lists)
             redis_manager.redis_db.lpush(category, *product_lists)
             redis_manager.redis_db.expire(category, CATEGORY_REFRESH_TIMEOUT_SECONDS)
-            self.update_state(state='PROGRESS',
+            self.update_state(state="PROGRESS",
                               meta=get_meta(page=page_download, total_element=len(product_lists),
                                             category=category))
             page_download += 1
@@ -94,12 +94,7 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             ttl_category = redis_manager.redis_db.ttl(category)
             ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
             redis_manager.redis_db.expire(key_error_too_many, ttl_category)
-            if page_download > 0:
-                self.retry(countdown=2)
-            else:
-                self.update_state(state="FAILURE", meta={"exc_type": type(TooManyRequestAmazonException).__name__,
-                                                         "exc_message": TooManyRequestAmazonException.code_message})
-                raise TooManyRequestAmazonException
+            self.retry(countdown=2)
         else:
             completed_key = category + database_constants.key_suffix_completed_data
             redis_manager.redis_db.set(completed_key, 1)
