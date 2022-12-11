@@ -5,6 +5,8 @@ services:
     hostname: redis
     container_name: redis_db
     image: redis
+    ports:
+      - "6379:6379"
     volumes:
       - ./data:/data
     expose: 
@@ -12,22 +14,24 @@ services:
     networks:
       - offertiamo_development
 
-  web:
-    container_name: webserver_flask
-    build: .
-    volumes:
-      - .:/code
-    ports:
-      - "5000:5000"
-    expose:
-      - "5000"
-    environment:
-      REDIS_DATABASE_HOST: "redis"
-    command: ['python3', './main.py']
-    depends_on:
-      - redis
-    networks:
-      - offertiamo_development
+  # web:
+  #   container_name: webserver_flask
+  #   build: .
+  #   volumes:
+  #     - .:/code
+  #   ports:
+  #     - "5000:5000"
+  #   expose:
+  #     - "5000"
+  #   environment:
+  #     CELERY_BROKER_URL: "redis://redis:6379/1"
+  #     CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+  #     REDIS_DATABASE_HOST: "redis"
+  #   command: ['python3', './main.py']
+  #   depends_on:
+  #     - redis
+  #   networks:
+  #     - offertiamo_development
     
   worker:
     container_name: worker_celery
@@ -35,8 +39,8 @@ services:
     volumes:
       - .:/code
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
     command: celery -A services.celery_services.celery_app worker
     depends_on:
       - redis
@@ -48,10 +52,10 @@ services:
     build: .
     ports:
      - "5555:5555"
-    command:  ['celery', 'flower']
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+    command:  ['celery', 'flower','--broker=redis://redis:6379/1']
     depends_on:
       - redis
       - worker

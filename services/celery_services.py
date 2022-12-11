@@ -1,5 +1,6 @@
 from celery import Celery
 import config
+from helper.debug_message import show_message_debug
 
 celery_app = Celery(
     __name__,
@@ -10,6 +11,8 @@ celery_app = Celery(
 
 
 def make_celery(app):
+    show_message_debug(message="CELERY_RESULT_BACKEND = "+config.CELERY_RESULT_BACKEND)
+    show_message_debug(message="CELERY_BROKER_URL = "+config.CELERY_BROKER_URL)
     celery_app.conf.update(app.config)
 
     class ContextTask(celery_app.Task):

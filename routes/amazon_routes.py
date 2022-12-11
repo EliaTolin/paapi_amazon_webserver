@@ -95,11 +95,15 @@ def get_category_offers_route():
                         if task.info['category'] and task.info['category'] == category:
                             while not task.ready():
                                 time.sleep(1)
+                                if task.status == celery.states.FAILURE:
+                                    handle_error(task.info, task.id)
                                 # Check if the task is for this category
-                                if task.info['page'] and task.info['page'] >= item_page:
-                                    if task.info['total_element'] and \
-                                            task.info['total_element'] >= item_page * item_count:
-                                        break
+                                elif task.info:
+                                    if task.info['page'] and task.info['page'] >= item_page:
+                                        if task.info['total_element'] and \
+                                                task.info['total_element'] >= item_page * item_count:
+                                            break
+                            raise ItemsNotFoundAmazonException
 
             key_error_too_many = category + database_constants.key_suffix_error_too_many
             if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
@@ -115,13 +119,14 @@ def get_category_offers_route():
                     time.sleep(1)
                     # Check if the task is for this category
                     if task_amazon.status == celery.states.FAILURE:
-                        print(task_amazon.info)
                         handle_error(task_amazon.info, task_amazon.id)
-                    if task_amazon.info:
+                    elif task_amazon.info:
                         if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
                             if task_amazon.info['total_element'] and \
                                     task_amazon.info['total_element'] >= item_page * item_count:
                                 break
+                raise ItemsNotFoundAmazonException
+            
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
         products_list = redis_manager.redis_db.lrange(category, index_start, index_finish), False
