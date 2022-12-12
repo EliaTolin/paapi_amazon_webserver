@@ -11,8 +11,9 @@ celery_app = Celery(
 
 
 def make_celery(app):
-    show_message_debug(message="CELERY_RESULT_BACKEND = "+config.CELERY_RESULT_BACKEND)
-    show_message_debug(message="CELERY_BROKER_URL = "+config.CELERY_BROKER_URL)
+    show_message_debug(message="CELERY_RESULT_BACKEND = " + config.CELERY_RESULT_BACKEND)
+    show_message_debug(message="CELERY_BROKER_URL = " + config.CELERY_BROKER_URL)
+    show_message_debug(message="2! REDIS_DATABASE_HOST = " + config.REDIS_DATABASE_HOST)
     celery_app.conf.update(app.config)
 
     class ContextTask(celery_app.Task):

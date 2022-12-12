@@ -1,0 +1,1 @@
+failure = "failure_celery"

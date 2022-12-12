@@ -6,6 +6,7 @@ from core.amazon_api import *
 from helper.response_helper import make_response
 from models.exceptions.amazon_exception import *
 from models.exceptions.redis_exception import *
+from models.exceptions.celery_exception import *
 import constant.params.amazon_params_constants as amazon_params
 import constant.exception.amazon_error_code_message as amazon_error_code_message
 import constant.exception.generic_error_code_message as generic_error_code_message
@@ -125,8 +126,10 @@ def get_category_offers_route():
                             if task_amazon.info['total_element'] and \
                                     task_amazon.info['total_element'] >= item_page * item_count:
                                 break
-                raise ItemsNotFoundAmazonException
-            
+                                
+                if task_amazon.status == celery.states.FAILURE:
+                    raise FailureCeleryException
+
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
         products_list = redis_manager.redis_db.lrange(category, index_start, index_finish), False
@@ -156,6 +159,9 @@ def get_category_offers_route():
         return make_response(status_code=e.code_message), 500
 
     except CategoryNotExistException as e:
+        return make_response(status_code=e.code_message), 400
+
+    except FailureCeleryException as e:
         return make_response(status_code=e.code_message), 400
 
     except ItemsNotFoundAmazonException as e:

@@ -9,30 +9,31 @@ services:
       - "6379:6379"
     volumes:
       - ./data:/data
-    expose: 
+    expose:
       - "6379"
     networks:
       - offertiamo_development
 
-  # web:
-  #   container_name: webserver_flask
-  #   build: .
-  #   volumes:
-  #     - .:/code
-  #   ports:
-  #     - "5000:5000"
-  #   expose:
-  #     - "5000"
-  #   environment:
-  #     CELERY_BROKER_URL: "redis://redis:6379/1"
-  #     CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-  #     REDIS_DATABASE_HOST: "redis"
-  #   command: ['python3', './main.py']
-  #   depends_on:
-  #     - redis
-  #   networks:
-  #     - offertiamo_development
-    
+  #  web:
+  #    container_name: webserver_flask
+  #    build: .
+  #    volumes:
+  #      - .:/code
+  #    ports:
+  #      - "5000:5000"
+  #    expose:
+  #      - "5000"
+  #    environment:
+  #      CELERY_BROKER_URL: "redis://redis:6379/1"
+  #      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
+  #      REDIS_DATABASE_HOST: "redis"
+  #    command: [ 'python3', './main.py' ]
+  #    depends_on:
+  #      - redis
+  #      - worker
+  #    networks:
+  #      - offertiamo_development
+  
   worker:
     container_name: worker_celery
     build: .
@@ -41,7 +42,10 @@ services:
     environment:
       CELERY_BROKER_URL: "redis://redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-    command: celery -A services.celery_services.celery_app worker
+      BROKER_URL: "redis://redis:6379/1"
+      RESULT_BACKEND: "redis://redis:6379/1"
+      REDIS_DATABASE_HOST: redis
+    command: [ "celery", "-A", "services.celery_services.celery_app", "worker" ]
     depends_on:
       - redis
     networks:
@@ -51,16 +55,17 @@ services:
     container_name: monitor_celery
     build: .
     ports:
-     - "5555:5555"
+      - "5555:5555"
     environment:
       CELERY_BROKER_URL: "redis://redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-    command:  ['celery', 'flower','--broker=redis://redis:6379/1']
+      REDIS_DATABASE_HOST: "redis"
+    command: [ 'celery', 'flower','--broker=redis://redis:6379/1' ]
     depends_on:
       - redis
       - worker
     networks:
-        - offertiamo_development
+      - offertiamo_development
 
 networks:
-    offertiamo_development:
+  offertiamo_development:

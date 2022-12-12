@@ -7,7 +7,7 @@ from helper.debug_message import show_message_debug
 
 class RedisManager:
     def __init__(self):
-        show_message_debug(message="REDIS_DATABASE_HOST = "+config.REDIS_DATABASE_HOST)
+        show_message_debug(message="!1 REDIS_DATABASE_HOST = " + config.REDIS_DATABASE_HOST)
         self.redis_db = redis.Redis(host=config.REDIS_DATABASE_HOST, port=config.REDIS_DATABASE_PORT,
                                     username=config.REDIS_DATABASE_USERNAME,
                                     password=config.REDIS_DATABASE_PASSWORD,
@@ -20,7 +20,7 @@ class RedisManager:
         except (redis.exceptions.ConnectionError, ConnectionRefusedError):
             return False
         return True
-    
+
     def delete_all_keys(self):
         keys = self.redis_db.keys('*')
         for key in keys:
