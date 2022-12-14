@@ -1,15 +1,34 @@
-from flask import Blueprint, request
+import celery.states
+from celery.exceptions import MaxRetriesExceededError
+from flask import Blueprint, request, jsonify
+from constant.database import database_constants
 from core.amazon_api import *
 from helper.response_helper import make_response
 from models.exceptions.amazon_exception import *
 from models.exceptions.redis_exception import *
+from models.exceptions.celery_exception import *
 import constant.params.amazon_params_constants as amazon_params
 import constant.exception.amazon_error_code_message as amazon_error_code_message
 import constant.exception.generic_error_code_message as generic_error_code_message
 import constant.routes.amazon_routes_constants as amazon_routes
+import constant.tasks.tasks_name_constants as tasks_name
+import core.tasks.amazon_task as amazon_tasks
+from singleton.redis_manager import *
+from services.celery_services import celery_app
+import time
 
 amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.url_prefix_route)
 amazonApiCore = AmazonApiCore()
+
+
+def is_running_tasked_name(name_task):
+    tasks = celery_app.control.inspect()
+    active_tasks = tasks.active()
+    for workers in active_tasks:
+        for t in active_tasks[workers]:
+            if t['name'] and t['name'] == name_task:
+                return True
+    return False
 
 
 def list_to_json(list_items):
@@ -17,6 +36,36 @@ def list_to_json(list_items):
     for item in list_items:
         json_list.append(item.to_json().replace("\"", "\'"))
     return json_list
+
+
+def handle_error(exc, task_id):
+    # Handle the exception
+    if isinstance(exc, ValueError):
+        print('Task {} failed because y cannot be 0'.format(task_id))
+    elif isinstance(exc, TypeError):
+        print('Task {} failed because x and y must be integers'.format(task_id))
+        raise GenericErrorAmazonException
+
+    elif isinstance(exc, MaxRetriesExceededError):
+        raise TooManyRequestAmazonException
+
+    elif isinstance(exc, InvalidArgumentAmazonException):
+        raise InvalidArgumentAmazonException
+
+    elif isinstance(exc, MissingParameterAmazonException):
+        raise MissingParameterAmazonException
+
+    elif isinstance(exc, TooManyRequestAmazonException):
+        raise TooManyRequestAmazonException
+
+    elif isinstance(exc, RedisConnectionException):
+        raise RedisConnectionException
+
+    elif isinstance(exc, CategoryNotExistException):
+        raise CategoryNotExistException
+
+    elif isinstance(exc, ItemsNotFoundAmazonException):
+        raise ItemsNotFoundAmazonException
 
 
 @amazon_route.route(amazon_routes.get_offers_route, methods=['POST'])
@@ -32,12 +81,73 @@ def get_category_offers_route():
 
     if category is None:
         return make_response(status_code=amazon_error_code_message.empty_category), 400
+
+    # if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+    products_list = []
     try:
-        list_products, limit_reached = amazonApiCore.get_category_offers(category, item_count=item_count,
-                                                                         item_page=item_page,
-                                                                         min_saving_percent=min_saving_percent,
-                                                                         exclude_zero_offers=exclude_zero_offers)
-        print(len(list_products))
+        completed_key = category + database_constants.key_suffix_completed_data
+        if not redis_manager.redis_db.exists(category) or not redis_manager.redis_db.get(completed_key):
+            tasks = celery_app.control.inspect()
+            active_tasks = tasks.active()
+            for workers in active_tasks:
+                for t in active_tasks[workers]:
+                    if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
+                        task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
+                        if task.info['category'] and task.info['category'] == category:
+                            while not task.ready():
+                                time.sleep(1)
+                                if task.status == celery.states.FAILURE:
+                                    handle_error(task.info, task.id)
+                                # Check if the task is for this category
+                                elif task.info:
+                                    if task.info['page'] and task.info['page'] >= item_page:
+                                        if task.info['total_element'] and \
+                                                task.info['total_element'] >= item_page * item_count:
+                                            break
+
+                            if task.status == celery.states.FAILURE:
+                                raise FailureCeleryException
+
+            key_error_too_many = category + database_constants.key_suffix_error_too_many
+            if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+                arguments = {"item_count": item_count, "item_page": item_page,
+                             "exclude_zero_offers": int(exclude_zero_offers)}
+                if category:
+                    arguments["category"] = category
+                if min_saving_percent:
+                    arguments["min_saving_percent"] = min_saving_percent
+
+                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+                while not task_amazon.ready():
+                    time.sleep(1)
+                    # Check if the task is for this category
+                    if task_amazon.status == celery.states.FAILURE:
+                        handle_error(task_amazon.info, task_amazon.id)
+                    elif task_amazon.info:
+                        if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
+                            if task_amazon.info['total_element'] and \
+                                    task_amazon.info['total_element'] >= item_page * item_count:
+                                break
+
+                if task_amazon.status == celery.states.FAILURE:
+                    raise FailureCeleryException
+
+        index_start = (item_page - 1) * item_count
+        index_finish = (item_page * item_count) - 1
+        products_list = redis_manager.redis_db.lrange(category, index_start, index_finish)
+
+        if len(products_list) == 0:
+            if item_page > 1:
+                return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
+            return make_response(status_code=amazon_error_code_message.empty_results), 204
+        try:
+            return make_response(data=products_list), 200
+
+        except ValueError:
+            return make_response(status_code=generic_error_code_message.error_convert_json), 500
+        except TypeError:
+            return make_response(status_code=generic_error_code_message.error_convert_json), 500
+
     except InvalidArgumentAmazonException as e:
         return make_response(status_code=e.code_message), 400
 
@@ -53,22 +163,11 @@ def get_category_offers_route():
     except CategoryNotExistException as e:
         return make_response(status_code=e.code_message), 400
 
+    except FailureCeleryException as e:
+        return make_response(status_code=e.code_message), 400
+
     except ItemsNotFoundAmazonException as e:
         return make_response(status_code=e.code_message), 204
-
-    if len(list_products) == 0:
-        if item_page > 1:
-            return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
-        return make_response(status_code=amazon_error_code_message.empty_results), 204
-    try:
-        if limit_reached:
-            return make_response(data=list_products), 206
-        return make_response(data=list_products), 200
-
-    except ValueError:
-        return make_response(status_code=generic_error_code_message.error_convert_json), 500
-    except TypeError:
-        return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
 @amazon_route.route(amazon_routes.search_products_route, methods=['POST'])
@@ -121,16 +220,16 @@ def search_product_route():
 
     except TooManyRequestAmazonException as e:
         return make_response(status_code=e.code_message), 500
-    
+
     except RedisConnectionException as e:
         return make_response(status_code=e.code_message), 500
 
     except CategoryNotExistException as e:
         return make_response(status_code=e.code_message), 400
-    
+
     except ItemsNotFoundAmazonException as e:
         return make_response(status_code=e.code_message), 204
-    
+
     if len(list_products) == 0:
         if item_page > 1:
             return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
@@ -155,5 +254,5 @@ def search_product_route():
 def add_category_preference():
     list_search_category = request.values.getlist(amazon_params.list_category_preference)
     for category in list_search_category:
-        redis_manager.redis_db.incr(category+database_constants.key_suffix_preference)
-    return make_response(status_code=generic_error_code_message.no_error),200
+        redis_manager.redis_db.incr(category + database_constants.key_suffix_preference)
+    return make_response(status_code=generic_error_code_message.no_error), 200

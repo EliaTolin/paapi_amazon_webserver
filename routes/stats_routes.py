@@ -1,7 +1,8 @@
 from flask import Blueprint
-from core.redis_manager import redis_manager
+from singleton.redis_manager import redis_manager
 import constant.routes.stats_routes_constants as stats_routes
 import constant.exception.database_error_code_message as db_error_message
+
 stats_route = Blueprint(stats_routes.name, __name__, url_prefix=stats_routes.url_prefix_route)
 
 
@@ -15,4 +16,3 @@ def status_db():
     if redis_manager.is_redis_available():
         return 200
     return db_error_message.redis_connection_error, 500
-
