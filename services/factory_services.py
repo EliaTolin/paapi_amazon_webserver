@@ -2,6 +2,7 @@ from flask import Flask
 from routes.routes import base_api
 from services.celery_services import make_celery
 import config
+import helper.debug_message as dbg_message
 
 
 def init_services():
@@ -12,4 +13,5 @@ def init_services():
         'result_backend': config.CELERY_BROKER_URL,
     })
     make_celery(app)
+    dbg_message.show_message_debug("INIT SERVICES DONE")
     return app

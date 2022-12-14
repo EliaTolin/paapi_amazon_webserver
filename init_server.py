@@ -8,7 +8,7 @@ import config
 
 
 def init_server() -> bool:
-    debug_message.show_message_debug("START INIT SERVER!", debug_message.TypeMessage.INFO)
+    debug_message.show_message_debug("START CHECK INIT SERVER!", debug_message.TypeMessage.INFO)
     # Check if redis is available
     if not redis_manager.is_redis_available():
         debug_message.show_message_debug("REDIS NOT CONNECTED! " + config.REDIS_DATABASE_HOST,
@@ -51,5 +51,5 @@ def init_server() -> bool:
         return False
 
     debug_message.show_message_debug("CELERY SERVER OK!", debug_message.TypeMessage.SUCCESS)
-    debug_message.show_message_debug("FINISH INIT SERVER!", debug_message.TypeMessage.SUCCESS)
+    debug_message.show_message_debug("FINISH CHECK INIT SERVER!", debug_message.TypeMessage.SUCCESS)
     return True

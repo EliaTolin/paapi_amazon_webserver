@@ -8,9 +8,7 @@ flask_app = init_services()
 
 if __name__ == '__main__':
     try:
-        if init.init_server():
-            flask_app.run(host='0.0.0.0', debug=config.DEBUG)
-        else:
+        if not init.init_server():
             print("###### THERE WAS AN ERROR, CHECK THE LOGS ######")
             exit(-1)
 
