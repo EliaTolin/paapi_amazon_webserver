@@ -27,7 +27,7 @@ services:
       CELERY_BROKER_URL: "redis://redis:6379/1"
       CELERY_RESULT_BACKEND: "redis://redis:6379/1"
       REDIS_DATABASE_HOST: "redis"
-    command: [ 'python3', './main.py' ]
+    command: [ "gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "main:flask_app" ]
     depends_on:
       - redis
       - worker
