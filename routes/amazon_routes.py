@@ -104,7 +104,9 @@ def get_category_offers_route():
                                         if task.info['total_element'] and \
                                                 task.info['total_element'] >= item_page * item_count:
                                             break
-                            raise ItemsNotFoundAmazonException
+
+                            if task.status == celery.states.FAILURE:
+                                raise FailureCeleryException
 
             key_error_too_many = category + database_constants.key_suffix_error_too_many
             if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
@@ -126,13 +128,13 @@ def get_category_offers_route():
                             if task_amazon.info['total_element'] and \
                                     task_amazon.info['total_element'] >= item_page * item_count:
                                 break
-                                
+
                 if task_amazon.status == celery.states.FAILURE:
                     raise FailureCeleryException
 
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
-        products_list = redis_manager.redis_db.lrange(category, index_start, index_finish), False
+        products_list = redis_manager.redis_db.lrange(category, index_start, index_finish)
 
         if len(products_list) == 0:
             if item_page > 1:
