@@ -12,9 +12,11 @@ import constant.exception.amazon_error_code_message as amazon_error_code_message
 import constant.exception.generic_error_code_message as generic_error_code_message
 import constant.routes.amazon_routes_constants as amazon_routes
 import constant.tasks.tasks_name_constants as tasks_name
+import constant.tasks.tasks_params as tasks_params
 import core.tasks.amazon_task as amazon_tasks
 from singleton.redis_manager import *
 from services.celery_services import celery_app
+from helper.error_handler import handle_error
 import time
 
 amazon_route = Blueprint(amazon_routes.name, __name__, url_prefix=amazon_routes.url_prefix_route)
@@ -26,46 +28,9 @@ def is_running_tasked_name(name_task):
     active_tasks = tasks.active()
     for workers in active_tasks:
         for t in active_tasks[workers]:
-            if t['name'] and t['name'] == name_task:
+            if t[tasks_params.task_name_params] and t[tasks_params.task_name_params] == name_task:
                 return True
     return False
-
-
-def list_to_json(list_items):
-    json_list = []
-    for item in list_items:
-        json_list.append(item.to_json().replace("\"", "\'"))
-    return json_list
-
-
-def handle_error(exc, task_id):
-    # Handle the exception
-    if isinstance(exc, ValueError):
-        print('Task {} failed because y cannot be 0'.format(task_id))
-    elif isinstance(exc, TypeError):
-        print('Task {} failed because x and y must be integers'.format(task_id))
-        raise GenericErrorAmazonException
-
-    elif isinstance(exc, MaxRetriesExceededError):
-        raise TooManyRequestAmazonException
-
-    elif isinstance(exc, InvalidArgumentAmazonException):
-        raise InvalidArgumentAmazonException
-
-    elif isinstance(exc, MissingParameterAmazonException):
-        raise MissingParameterAmazonException
-
-    elif isinstance(exc, TooManyRequestAmazonException):
-        raise TooManyRequestAmazonException
-
-    elif isinstance(exc, RedisConnectionException):
-        raise RedisConnectionException
-
-    elif isinstance(exc, CategoryNotExistException):
-        raise CategoryNotExistException
-
-    elif isinstance(exc, ItemsNotFoundAmazonException):
-        raise ItemsNotFoundAmazonException
 
 
 @amazon_route.route(amazon_routes.get_offers_route, methods=['POST'])
@@ -82,7 +47,6 @@ def get_category_offers_route():
     if category is None:
         return make_response(status_code=amazon_error_code_message.empty_category), 400
 
-    # if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
     products_list = []
     try:
         completed_key = category + database_constants.key_suffix_completed_data
@@ -91,18 +55,21 @@ def get_category_offers_route():
             active_tasks = tasks.active()
             for workers in active_tasks:
                 for t in active_tasks[workers]:
-                    if t['name'] and t['name'] == tasks_name.TASK_GET_OFFERS_AMAZON:
+                    if t[tasks_params.task_name_params] and \
+                            t[tasks_params.task_name_params] == tasks_name.TASK_GET_OFFERS_AMAZON:
                         task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
-                        if task.info['category'] and task.info['category'] == category:
+                        if task.info[tasks_params.task_category_params] and \
+                                task.info[tasks_params.task_category_params] == category:
                             while not task.ready():
                                 time.sleep(1)
                                 if task.status == celery.states.FAILURE:
                                     handle_error(task.info, task.id)
                                 # Check if the task is for this category
                                 elif task.info:
-                                    if task.info['page'] and task.info['page'] >= item_page:
-                                        if task.info['total_element'] and \
-                                                task.info['total_element'] >= item_page * item_count:
+                                    if task.info[tasks_params.task_page_params] and \
+                                            task.info[tasks_params.task_page_params] >= item_page:
+                                        if task.info[tasks_params.task_total_element] and \
+                                                task.info[tasks_params.task_total_element] >= item_page * item_count:
                                             break
 
                             if task.status == celery.states.FAILURE:
@@ -124,9 +91,10 @@ def get_category_offers_route():
                     if task_amazon.status == celery.states.FAILURE:
                         handle_error(task_amazon.info, task_amazon.id)
                     elif task_amazon.info:
-                        if task_amazon.info['page'] and task_amazon.info['page'] >= item_page:
-                            if task_amazon.info['total_element'] and \
-                                    task_amazon.info['total_element'] >= item_page * item_count:
+                        if task_amazon.info[tasks_params.task_page_params] and \
+                                task_amazon.info[tasks_params.task_page_params] >= item_page:
+                            if task_amazon.info[tasks_params.task_total_element] and \
+                                    task_amazon.info[tasks_params.task_total_element] >= item_page * item_count:
                                 break
 
                 if task_amazon.status == celery.states.FAILURE:
@@ -193,7 +161,7 @@ def search_product_route():
         item_page = request.values.get(amazon_params.itemPageParam, type=int, default=1) or None
         exclude_zero_price = request.values.get(amazon_params.excludeZeroPriceParam, type=bool, default=False)
         exclude_zero_offers = request.values.get(amazon_params.excludeZeroOffersParam, type=bool, default=False)
-        only_prime_delivery = request.values.get(amazon_params.only_prime_delivery, type=bool, default=False)
+        only_prime_delivery = request.values.get(amazon_params.onlyPrimeDeliveryParam, type=bool, default=False)
 
     except ValueError:
         return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
@@ -250,9 +218,19 @@ def search_product_route():
         return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
+@amazon_route.route(amazon_routes.get_products_by_asin, methods=['POST'])
+def get_products_by_asin():
+    list_asins = request.values.getlist(amazon_params.asinProductsParam)
+    return "hello", 200
+
+
 @amazon_route.route(amazon_routes.add_category_preference, methods=['POST'])
 def add_category_preference():
-    list_search_category = request.values.getlist(amazon_params.list_category_preference)
+    list_search_category = request.values.getlist(amazon_params.listCategoryPreferenceParam)
+
+    if list_search_category is None:
+        return make_response(status_code=generic_error_code_message.no_error), 200
+
     for category in list_search_category:
         redis_manager.redis_db.incr(category + database_constants.key_suffix_preference)
     return make_response(status_code=generic_error_code_message.no_error), 200
