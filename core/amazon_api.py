@@ -143,6 +143,9 @@ class AmazonApiCore:
         except TooManyRequests:
             raise TooManyRequestAmazonException
 
+        except AsinNotFound:
+            raise AsinNotFoundException
+
         for item in products_results:
             try:
                 if item.offers is None:
@@ -158,9 +161,6 @@ class AmazonApiCore:
 
             except UrlNotDefinedAmazonException:
                 continue
-
-            except AsinNotFound:
-                list_item[item.asin] = 'asin_not_found'
 
             except Exception:
                 raise Exception(amazon_error_code_message.generic_error_amazon)
