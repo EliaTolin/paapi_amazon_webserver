@@ -221,7 +221,39 @@ def search_product_route():
 @amazon_route.route(amazon_routes.get_products_by_asin, methods=['POST'])
 def get_products_by_asin():
     list_asins = request.values.getlist(amazon_params.asinProductsParam)
-    return "hello", 200
+    try:
+        list_products = amazonApiCore.get_products_by_asin(asins=list_asins)
+
+    except MissingParameterAmazonException as e:
+        return make_response(status_code=e.code_message), 400
+
+    except TooManyRequestAmazonException as e:
+        return make_response(status_code=e.code_message), 500
+
+    except RedisConnectionException as e:
+        return make_response(status_code=e.code_message), 500
+
+    except CategoryNotExistException as e:
+        return make_response(status_code=e.code_message), 400
+
+    except ItemsNotFoundAmazonException as e:
+        return make_response(status_code=e.code_message), 204
+
+    if len(list_products) == 0:
+        return make_response(status_code=amazon_error_code_message.empty_results), 204
+
+    try:
+        products_json_list = []
+        for el in list_products:
+            products_json_list.append(el.to_json())
+
+        return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 200
+
+    except ValueError:
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
+
+    except TypeError:
+        return make_response(status_code=generic_error_code_message.error_convert_json), 500
 
 
 @amazon_route.route(amazon_routes.add_category_preference, methods=['POST'])

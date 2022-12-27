@@ -1,6 +1,6 @@
 from typing import Tuple, List
 from amazon_paapi.sdk.models.sort_by import SortBy
-from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound
+from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound, AsinNotFound
 from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
 from models.amazon_model import AmazonItem
@@ -143,7 +143,7 @@ class AmazonApiCore:
         except TooManyRequests:
             raise TooManyRequestAmazonException
 
-        for item in products_results.items:
+        for item in products_results:
             try:
                 if item.offers is None:
                     continue
@@ -158,6 +158,9 @@ class AmazonApiCore:
 
             except UrlNotDefinedAmazonException:
                 continue
+
+            except AsinNotFound:
+                raise AsinNotFoundException
 
             except Exception:
                 raise Exception(amazon_error_code_message.generic_error_amazon)
