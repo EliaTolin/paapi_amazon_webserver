@@ -166,4 +166,3 @@ class AmazonApiCore:
                 raise Exception(amazon_error_code_message.generic_error_amazon)
 
         return list_item
-
