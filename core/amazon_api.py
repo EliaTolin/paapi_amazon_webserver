@@ -130,8 +130,8 @@ class AmazonApiCore:
         return list_item, limit_reached
 
     @staticmethod
-    def get_products_by_asin(asins: List[str]) -> List[AmazonItem]:
-        list_item = []
+    def get_products_by_asin(asins: List[str]):
+        list_item = {}
         try:
             products_results = amazon_manager.amazon_api.get_items(asins)
         except InvalidArgument:
@@ -154,15 +154,16 @@ class AmazonApiCore:
 
                 amazon_item = AmazonItem(item)
 
-                list_item.append(amazon_item)
+                list_item[item.asin] = amazon_item.to_json()
 
             except UrlNotDefinedAmazonException:
                 continue
 
             except AsinNotFound:
-                raise AsinNotFoundException
+                list_item[item.asin] = 'asin_not_found'
 
             except Exception:
                 raise Exception(amazon_error_code_message.generic_error_amazon)
 
         return list_item
+
