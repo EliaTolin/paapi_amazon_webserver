@@ -131,7 +131,7 @@ class AmazonApiCore:
 
     @staticmethod
     def get_products_by_asin(asins: List[str]):
-        list_item = {}
+        list_item = []
         try:
             products_results = amazon_manager.amazon_api.get_items(asins)
         except InvalidArgument:
