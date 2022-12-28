@@ -1,6 +1,6 @@
 from typing import Tuple, List
 from amazon_paapi.sdk.models.sort_by import SortBy
-from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound
+from amazon_paapi.errors.exceptions import TooManyRequests, InvalidArgument, ItemsNotFound, AsinNotFound
 from models.amazon_category import AmazonCategory
 from models.exceptions.amazon_exception import *
 from models.amazon_model import AmazonItem
@@ -128,3 +128,41 @@ class AmazonApiCore:
                 raise Exception(amazon_error_code_message.generic_error_amazon)
 
         return list_item, limit_reached
+
+    @staticmethod
+    def get_products_by_asin(asins: List[str]):
+        list_item = {}
+        try:
+            products_results = amazon_manager.amazon_api.get_items(asins)
+        except InvalidArgument:
+            raise InvalidArgumentAmazonException
+
+        except ItemsNotFound:
+            raise ItemsNotFoundAmazonException
+
+        except TooManyRequests:
+            raise TooManyRequestAmazonException
+
+        except AsinNotFound:
+            raise AsinNotFoundException
+
+        for item in products_results:
+            try:
+                if item.offers is None:
+                    continue
+                if item.offers.listings[0] is None:
+                    continue
+                if item.offers.listings[0].price is None:
+                    continue
+
+                amazon_item = AmazonItem(item)
+
+                list_item[item.asin] = amazon_item.to_json()
+
+            except UrlNotDefinedAmazonException:
+                continue
+
+            except Exception:
+                raise Exception(amazon_error_code_message.generic_error_amazon)
+
+        return list_item

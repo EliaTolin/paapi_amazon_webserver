@@ -47,3 +47,8 @@ class TooManyRequestAmazonException(Error):
 class ItemsNotFoundAmazonException(Error):
     """except amazon_paapi.errors.exceptions.ItemsNotFound"""
     code_message = error_message.items_not_found
+
+
+class AsinNotFoundException(Error):
+    """except amazon_paapi.errors.exceptions.AsinNotFound"""
+    code_message = error_message.asin_not_found
