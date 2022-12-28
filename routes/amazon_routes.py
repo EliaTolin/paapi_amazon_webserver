@@ -243,7 +243,10 @@ def get_products_by_asin():
         return make_response(status_code=amazon_error_code_message.empty_results), 204
 
     try:
-        return make_response(data=list_products, status_code=generic_error_code_message.no_error), 200
+        products_json_list = []
+        for el in list_products:
+            products_json_list.append(el.to_json())
+        return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 200
 
     except ValueError:
         return make_response(status_code=generic_error_code_message.error_convert_json), 500
