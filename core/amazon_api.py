@@ -157,7 +157,7 @@ class AmazonApiCore:
 
                 amazon_item = AmazonItem(item)
 
-                list_item[item.asin] = amazon_item.to_json()
+                list_item.append(amazon_item)
 
             except UrlNotDefinedAmazonException:
                 continue
