@@ -16,6 +16,7 @@ services:
 
   web:
     container_name: webserver_flask
+    pull_policy: always
     build: .
     volumes:
       - .:/code
