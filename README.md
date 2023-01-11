@@ -1,4 +1,3 @@
-###  Development in progress, collaborate! 
 <br/>
 <p align="center">
   <a href="https://github.com/EliaTolin/paapi_amazon_webserver">
