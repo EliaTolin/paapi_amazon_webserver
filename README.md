@@ -92,13 +92,6 @@ The webserver provides two endpoints, others will be in development if requested
 
 	Use this to make you return the products on offer or not regarding a certain category, it saves it in the DB with a timeout, if it is requested 	again it provides the results saved in the cache without re-downloading them. It has systems to handle the TooManyRequest error.
 
-## Contributing
-
-For ignore your config.py
-
-```shell
- git update-index --skip-worktree config.py
-```
 ### Creating A Pull Request
 
 1. Fork the Project
