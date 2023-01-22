@@ -1,8 +1,5 @@
 <br/>
 <p align="center">
-  <a href="https://github.com/EliaTolin/paapi_amazon_webserver">
-    <img src="https://user-images.githubusercontent.com/60351315/197619270-95b9dd60-6e73-4191-a309-a54104b60d86.png" alt="Logo" width="720">
-  </a>
 
   <h3 align="center">PAAPI Amazon Webserver</h3>
 
