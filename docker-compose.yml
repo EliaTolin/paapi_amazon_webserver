@@ -9,8 +9,6 @@ services:
       - "6379:6379"
     volumes:
       - ./data:/data
-    expose:
-      - "6379"
     networks:
       - offertiamo_development
 
