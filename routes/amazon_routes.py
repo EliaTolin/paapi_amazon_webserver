@@ -49,61 +49,70 @@ def get_category_offers_route():
 
     products_list = []
     try:
+        # Get complete key
         completed_key = category + database_constants.key_suffix_completed_data
-        if not redis_manager.redis_db.exists(category) or not redis_manager.redis_db.get(completed_key):
-            tasks = celery_app.control.inspect()
-            active_tasks = tasks.active()
-            for workers in active_tasks:
-                for t in active_tasks[workers]:
-                    if t[tasks_params.task_name_params] and \
-                            t[tasks_params.task_name_params] == tasks_name.TASK_GET_OFFERS_AMAZON:
-                        task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
-                        if task.info[tasks_params.task_category_params] and \
-                                task.info[tasks_params.task_category_params] == category:
-                            while not task.ready():
-                                time.sleep(1)
+        # Check if already exist the key
+        if redis_manager.redis_db.exists(category):
+            if not int(redis_manager.redis_db.get(completed_key)):
+                # Get all tasks
+                tasks = celery_app.control.inspect()
+                # Get only active tasks
+                active_tasks = tasks.active()
+                for workers in active_tasks:
+                    # Get task
+                    for t in active_tasks[workers]:
+                        # Check our task for the category
+                        if t[tasks_params.task_name_params] and \
+                                t[tasks_params.task_name_params] == tasks_name.TASK_GET_OFFERS_AMAZON:
+                            task = amazon_tasks.get_category_offers.AsyncResult(t['id'])
+                            if task is not None and task.info is not None:
+                                if task.info[tasks_params.task_category_params] and \
+                                        task.info[tasks_params.task_category_params] == category:
+                                    while not task.ready():
+                                        time.sleep(1)
+                                        if task.status == celery.states.FAILURE:
+                                            handle_error(task.info, task.id)
+                                        # Check if the task is for this category
+                                        elif task.info:
+                                            if task.info[tasks_params.task_page_params] and \
+                                                    task.info[tasks_params.task_page_params] >= item_page:
+                                                total_element = redis_manager.redis_db.llen(category)
+                                                if total_element and total_element >= item_page * item_count:
+                                                    break
+                                    if task.status == celery.states.FAILURE:
+                                        raise FailureCeleryException
+                            else:
                                 if task.status == celery.states.FAILURE:
                                     handle_error(task.info, task.id)
-                                # Check if the task is for this category
-                                elif task.info:
-                                    if task.info[tasks_params.task_page_params] and \
-                                            task.info[tasks_params.task_page_params] >= item_page:
-                                        if task.info[tasks_params.task_total_element] and \
-                                                task.info[tasks_params.task_total_element] >= item_page * item_count:
-                                            break
 
-                            if task.status == celery.states.FAILURE:
-                                raise FailureCeleryException
+        key_error_too_many = category + database_constants.key_suffix_error_too_many
+        if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
+            arguments = {"item_count": item_count, "item_page": item_page,
+                         "exclude_zero_offers": int(exclude_zero_offers)}
+            if category:
+                arguments["category"] = category
+            if min_saving_percent:
+                arguments["min_saving_percent"] = min_saving_percent
 
-            key_error_too_many = category + database_constants.key_suffix_error_too_many
-            if not redis_manager.redis_db.exists(category) or redis_manager.redis_db.exists(key_error_too_many):
-                arguments = {"item_count": item_count, "item_page": item_page,
-                             "exclude_zero_offers": int(exclude_zero_offers)}
-                if category:
-                    arguments["category"] = category
-                if min_saving_percent:
-                    arguments["min_saving_percent"] = min_saving_percent
-
-                task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
-                while not task_amazon.ready():
-                    time.sleep(1)
-                    # Check if the task is for this category
-                    if task_amazon.status == celery.states.FAILURE:
-                        handle_error(task_amazon.info, task_amazon.id)
-                    elif task_amazon.info:
-                        if task_amazon.info[tasks_params.task_page_params] and \
-                                task_amazon.info[tasks_params.task_page_params] >= item_page:
-                            if task_amazon.info[tasks_params.task_total_element] and \
-                                    task_amazon.info[tasks_params.task_total_element] >= item_page * item_count:
-                                break
-
+            task_amazon = amazon_tasks.get_category_offers.apply_async(kwargs=arguments)
+            while not task_amazon.ready():
+                time.sleep(1)
+                # Check if the task is for this category
                 if task_amazon.status == celery.states.FAILURE:
-                    raise FailureCeleryException
+                    handle_error(task_amazon.info, task_amazon.id)
+                elif task_amazon.info:
+                    if task_amazon.info[tasks_params.task_page_params] and \
+                            task_amazon.info[tasks_params.task_page_params] >= item_page:
+                        if task_amazon.info[tasks_params.task_total_element] and \
+                                task_amazon.info[tasks_params.task_total_element] >= item_page * item_count:
+                            break
+
+            if task_amazon.status == celery.states.FAILURE:
+                raise FailureCeleryException
 
         index_start = (item_page - 1) * item_count
         index_finish = (item_page * item_count) - 1
         products_list = redis_manager.redis_db.lrange(category, index_start, index_finish)
-
         if len(products_list) == 0:
             if item_page > 1:
                 return make_response(status_code=amazon_error_code_message.limit_reached_products), 204

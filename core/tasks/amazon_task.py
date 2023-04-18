@@ -32,7 +32,8 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
     except InvalidArgument as e:
         self.update_state(state="FAILURE", meta={"exc_type": type(e).__name__,
                                                  "exc_message": str(e)})
-        raise e
+        raise InvalidArgumentAmazonException
+
     except CategoryNotExistException as e:
         self.update_state(state="FAILURE", meta={"exc_type": type(ItemsNotFoundAmazonException).__name__,
                                                  "exc_message": ItemsNotFoundAmazonException.code_message})
@@ -77,12 +78,12 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             self.update_state(state="FAILURE", meta={"exc_type": type(e).__name__, "exc_message": e.code_message})
             raise MissingParameterAmazonException
 
-        except ItemsNotFound as e:
+        except ItemsNotFoundAmazonException as e:
             self.update_state(state="FAILURE", meta={"exc_type": type(ItemsNotFoundAmazonException).__name__,
                                                      "exc_message": ItemsNotFoundAmazonException.code_message})
             raise ItemsNotFoundAmazonException
 
-        except TooManyRequests:
+        except TooManyRequestAmazonException:
             redis_manager.redis_db.set(key_error_too_many, page_download)
             ttl_category = redis_manager.redis_db.ttl(category)
             ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
@@ -90,7 +91,7 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
             self.retry(countdown=2)
         else:
             completed_key = category + database_constants.key_suffix_completed_data
-            redis_manager.redis_db.set(completed_key, 1)
+            redis_manager.redis_db.set(completed_key, 0)
             ttl_category = redis_manager.redis_db.ttl(category)
             ttl_category = CATEGORY_REFRESH_TIMEOUT_SECONDS if ttl_category < 0 else ttl_category
             redis_manager.redis_db.expire(completed_key, ttl_category)
@@ -99,6 +100,7 @@ def get_category_offers(self, category, item_count: int = 10, item_page: int = 1
         if limit_reached:
             break
 
+    redis_manager.redis_db.set(completed_key, 1)
     total_time = start_time - time.perf_counter()
 
     return get_final_meta(total_time_s=total_time, total_element=total_element, category=category)

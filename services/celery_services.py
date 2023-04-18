@@ -1,6 +1,7 @@
 from celery import Celery
 import config
 from helper.debug_message import show_message_debug
+
 celery_app = Celery(
     __name__,
     backend=config.CELERY_RESULT_BACKEND,

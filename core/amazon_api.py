@@ -71,6 +71,7 @@ class AmazonApiCore:
                                                                     search_index=search_index,
                                                                     sort_by=sort_type, item_page=item_page,
                                                                     item_count=item_count)
+
         except InvalidArgument:
             raise InvalidArgumentAmazonException
 
