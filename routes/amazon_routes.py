@@ -146,6 +146,9 @@ def get_category_offers_route():
     except ItemsNotFoundAmazonException as e:
         return make_response(status_code=e.code_message), 204
 
+    except Exception as e:
+        return make_response(status_code=GenericErrorAmazonException.code_message), 500
+
 
 @amazon_route.route(amazon_routes.search_products_route, methods=['POST'])
 def search_product_route():
@@ -177,48 +180,67 @@ def search_product_route():
 
     except TypeError:
         return make_response(status_code=generic_error_code_message.wrong_type_parameter), 400
+    list_products = []
+    is_good_result = False
+    limit_reached = False
+    while not is_good_result:
+        try:
+            list_products_tmp, limit_reached = amazonApiCore.search_products(keywords=wordlist, actor=actor,
+                                                                             artist=artist,
+                                                                             author=author,
+                                                                             brand=brand,
+                                                                             title=title, max_price=max_price,
+                                                                             min_price=min_price,
+                                                                             min_saving_percent=min_saving_percent,
+                                                                             min_reviews_rating=min_reviews_rating,
+                                                                             search_index=search_index, sort=sort,
+                                                                             item_page=item_page,
+                                                                             item_count=item_count,
+                                                                             exclude_zero_price=exclude_zero_price,
+                                                                             exclude_zero_offers=exclude_zero_offers,
+                                                                             only_prime_delivery=only_prime_delivery)
+            list_products = list_products + list_products_tmp
+        except MissingParameterAmazonException as e:
+            return make_response(status_code=e.code_message), 400
+
+        except TooManyRequestAmazonException as e:
+            return make_response(status_code=e.code_message), 500
+
+        except RedisConnectionException as e:
+            return make_response(status_code=e.code_message), 500
+
+        except CategoryNotExistException as e:
+            return make_response(status_code=e.code_message), 400
+
+        except ItemsNotFoundAmazonException as e:
+            return make_response(status_code=e.code_message), 204
+        except Exception as e:
+            return make_response(status_code=GenericErrorAmazonException.code_message), 500
+
+        if limit_reached:
+            is_good_result = True
+        elif len(list_products) >= 8:
+            is_good_result = True
+        else:
+            time.sleep(1)
+            item_page += 1
 
     try:
-        list_products, limit_reached = amazonApiCore.search_products(keywords=wordlist, actor=actor, artist=artist,
-                                                                     author=author,
-                                                                     brand=brand,
-                                                                     title=title, max_price=max_price,
-                                                                     min_price=min_price,
-                                                                     min_saving_percent=min_saving_percent,
-                                                                     min_reviews_rating=min_reviews_rating,
-                                                                     search_index=search_index, sort=sort,
-                                                                     item_page=item_page,
-                                                                     item_count=item_count,
-                                                                     exclude_zero_price=exclude_zero_price,
-                                                                     exclude_zero_offers=exclude_zero_offers,
-                                                                     only_prime_delivery=only_prime_delivery)
-    except MissingParameterAmazonException as e:
-        return make_response(status_code=e.code_message), 400
+        if len(list_products) == 0:
+            if item_page > 1:
+                return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
+            return make_response(status_code=amazon_error_code_message.empty_results), 204
 
-    except TooManyRequestAmazonException as e:
-        return make_response(status_code=e.code_message), 500
-
-    except RedisConnectionException as e:
-        return make_response(status_code=e.code_message), 500
-
-    except CategoryNotExistException as e:
-        return make_response(status_code=e.code_message), 400
-
-    except ItemsNotFoundAmazonException as e:
-        return make_response(status_code=e.code_message), 204
-
-    if len(list_products) == 0:
-        if item_page > 1:
-            return make_response(status_code=amazon_error_code_message.limit_reached_products), 204
-        return make_response(status_code=amazon_error_code_message.empty_results), 204
-
-    try:
         products_json_list = []
+
         for el in list_products:
             products_json_list.append(el.to_json())
         if limit_reached:
-            return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 206
-        return make_response(data=products_json_list, status_code=generic_error_code_message.no_error), 200
+            return make_response(data=products_json_list, num_elements=len(list_products), new_page=item_page,
+                                 status_code=generic_error_code_message.no_error), 206
+
+        return make_response(data=products_json_list, num_elements=len(list_products), new_page=item_page,
+                             status_code=generic_error_code_message.no_error), 200
 
     except ValueError:
         return make_response(status_code=generic_error_code_message.error_convert_json), 500
