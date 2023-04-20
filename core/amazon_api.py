@@ -66,8 +66,8 @@ class AmazonApiCore:
                                                                     brand=brand,
                                                                     title=title,
                                                                     max_price=max_price, min_price=min_price,
-                                                                    # min_saving_percent=min_saving_percent,
-                                                                    # min_reviews_rating=min_reviews_rating,
+                                                                    min_saving_percent=min_saving_percent,
+                                                                    min_reviews_rating=min_reviews_rating,
                                                                     search_index=search_index,
                                                                     sort_by=sort_type, item_page=item_page,
                                                                     item_count=item_count)
