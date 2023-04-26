@@ -4,8 +4,9 @@ services:
   redis:
     hostname: redis
     container_name: redis_db
+    restart: unless-stopped
     image: redis
-    ports:
+    expose:
       - "6379"
     volumes:
       - ./data:/data
@@ -14,7 +15,7 @@ services:
 
   web:
     container_name: webserver_flask
-    pull_policy: always
+    restart: unless-stopped
     build: .
     volumes:
       - .:/code
