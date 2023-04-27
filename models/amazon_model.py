@@ -1,5 +1,5 @@
 from amazon_paapi.models import Item
-import json
+import jsonpickle
 
 from models.exceptions.amazon_exception import *
 
@@ -85,7 +85,7 @@ class AmazonItem:
             self.score = product.score
         else:
             self.score = None
-            
+
         if product.images.primary.large is not None:
             self.images_large = product.images.primary.large
         else:
@@ -101,7 +101,6 @@ class AmazonItem:
         else:
             self.images_small = None
 
-
         if product.detail_page_url is not None:
             self.product_url = product.detail_page_url
             self.share_url = product.detail_page_url
@@ -109,6 +108,6 @@ class AmazonItem:
             raise UrlNotDefinedAmazonException
 
     def to_json(self):
-        return json.dumps(self, default=lambda o: o.__dict__)
+        return jsonpickle.encode(self, unpicklable=False)
         # object_json = json.dumps(self, default=lambda o: o.__dict__)
         # return object_json.replace("\"","\'")
