@@ -18,6 +18,7 @@ importlib-metadata==5.0.0
 isort==5.10.1
 itsdangerous==2.1.2
 Jinja2==3.1.2
+jsonpickle==3.0.1
 kombu==5.2.4
 lazy-object-proxy==1.8.0
 MarkupSafe==2.1.1

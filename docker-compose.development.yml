@@ -13,28 +13,7 @@ services:
       - "6379"
     networks:
       - offertiamo_development
-  #
-  #  web:
-  #    container_name: webserver_flask
-  #    build: .
-  #    volumes:
-  #      - .:/code
-  #    ports:
-  #      - "5000:5000"
-  #    expose:
-  #      - "5000"
-  #    environment:
-  #      CELERY_BROKER_URL: "redis://redis:6379/1"
-  #      CELERY_RESULT_BACKEND: "redis://redis:6379/1"
-  #      REDIS_DATABASE_HOST: "redis"
-  #      FLASK_APP: "main:flask_app"
-  #    command: [ 'flask', 'run', '--host=0.0.0.0' ]
-  #    depends_on:
-  #      - redis
-  #      - worker
-  #    networks:
-  #      - offertiamo_development
-  #
+
   worker:
     container_name: worker_celery
     build: .
